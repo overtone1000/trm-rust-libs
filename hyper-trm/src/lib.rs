@@ -1,20 +1,15 @@
-use std::{
-    error::Error,
-    future::Future,
-    net::{IpAddr, SocketAddr},
-    pin::Pin,
-};
+use std::net::{IpAddr, SocketAddr};
 
-use http_body_util::{combinators::BoxBody, Full};
 use hyper::{
-    body::{Body, Bytes, Incoming},
+    body::{Body, Incoming},
     server::conn::http1,
-    service::{HttpService, Service},
-    Request, Response,
+    service::HttpService,
 };
 use hyper_util::rt::{TokioIo, TokioTimer};
 
 use tokio::net::TcpListener;
+
+pub mod generic_service;
 
 pub async fn spawn_server<S>(
     ip: IpAddr,
