@@ -1,6 +1,6 @@
 use std::{future::Future, pin::Pin};
 
-use futures_util::TryStreamExt;
+use futures_util::{future::BoxFuture, TryStreamExt};
 use http_body_util::{combinators::BoxBody, BodyExt, Full};
 use hyper::{
     body::{Bytes, Frame, Incoming},
@@ -14,6 +14,7 @@ pub type HandlerBody = BoxBody<Bytes, HandlerError>;
 pub type HandlerResponse = Response<HandlerBody>;
 pub type HandlerResult = Result<HandlerResponse, HandlerError>;
 pub type HandlerFuture = Pin<Box<dyn Future<Output = HandlerResult> + Send>>;
+//pub type HandlerFuture = BoxFuture<'static, dyn Future<Output = HandlerResult> + Send>;
 //pub type HandlerFuture = dyn Future<Output = Result<HandlerResponse, HandlerError>>;
 
 pub async fn get_request_body_as_string(
