@@ -9,6 +9,7 @@ use hyper_util::rt::{TokioIo, TokioTimer};
 
 use tokio::net::TcpListener;
 
+pub mod commons;
 pub mod generic_service;
 
 pub async fn spawn_server<S>(
