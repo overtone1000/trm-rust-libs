@@ -7,9 +7,11 @@ use hyper::{
 };
 use hyper_util::rt::{TokioIo, TokioTimer};
 
+use service::stateless_service::{StatelessHandler, StatelessService};
 use tokio::net::TcpListener;
 
 pub mod commons;
+pub mod service;
 
 pub async fn spawn_server<S>(
     ip: IpAddr,

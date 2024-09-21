@@ -10,3 +10,4 @@ hyper-util = { version = "^0.1", features = ["full"] }
 http-body-util = "^0.1"
 tokio-util = "^0"
 futures-util = "^0"
+trait-variant = "^0"
