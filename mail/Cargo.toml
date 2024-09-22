@@ -1,0 +1,9 @@
+[package]
+name = "mail"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lettre = "^0"
+dotenvy = "^0" #loads environement variables
+validator = "^0"
