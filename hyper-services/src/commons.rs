@@ -4,6 +4,7 @@ use futures_util::{future::BoxFuture, TryStreamExt};
 use http_body_util::{combinators::BoxBody, BodyExt, Full};
 use hyper::{
     body::{Bytes, Frame, Incoming},
+    header::HeaderValue,
     Request, Response,
 };
 
@@ -20,10 +21,9 @@ pub type HandlerFuture = Pin<Box<dyn Future<Output = HandlerResult> + Send>>;
 pub async fn get_request_body_as_string(
     request: Request<Incoming>,
 ) -> Result<String, HandlerError> {
-    Ok(
-        String::from_utf8(request.collect().await?.to_bytes().to_vec())
-            .expect("Couldn't parse bytes."),
-    )
+    let collected_request = request.collect().await?.to_bytes().to_vec();
+    let parsed_request = String::from_utf8(collected_request)?;
+    Ok(parsed_request)
 }
 
 pub fn full_to_boxed_body<T: Into<Bytes>>(chunk: T) -> HandlerBody {
@@ -83,4 +83,14 @@ pub async fn send_file(path: String) -> HandlerResult {
             }
         }
     }
+}
+
+pub const HEADER_ORIGIN: &str = "Origin";
+pub const HEADER_ACCESS_CONTROL_ALLOW_ORIGIN: &str = "Access-Control-Allow-Origin";
+
+pub fn permit_all_cors<T>(response: &mut Response<T>) {
+    let value: HeaderValue = HeaderValue::from_str("*").expect("Should be a valid header.");
+    response
+        .headers_mut()
+        .insert(HEADER_ACCESS_CONTROL_ALLOW_ORIGIN, value);
 }
