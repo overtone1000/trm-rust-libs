@@ -1,0 +1,10 @@
+[package]
+name = "db"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "^1", features = ["full"] }
+tokio-util = "^0"
+futures-util = "^0"
+diesel = { version = "^2" }

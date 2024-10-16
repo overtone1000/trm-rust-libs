@@ -3,7 +3,7 @@ use hyper::{body::Incoming, service::Service, Request};
 use crate::commons::{HandlerError, HandlerFuture, HandlerResponse, HandlerResult};
 
 #[trait_variant::make(StatefulHandler: Send)]
-pub trait LocalStatefulHandler: Clone {
+pub trait _LocalStatefulHandler: Clone {
     async fn handle_request(self: Self, request: Request<Incoming>) -> HandlerResult;
 }
 
