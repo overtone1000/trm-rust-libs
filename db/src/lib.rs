@@ -1,5 +1,5 @@
 use diesel::Connection;
-use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
 pub trait DatabaseTransactable<U>
 where
@@ -14,8 +14,8 @@ where
     U: Connection,
 {
     conn: U,
-    tx: Sender<T>,
-    rx: Receiver<T>,
+    tx: UnboundedSender<T>,
+    rx: UnboundedReceiver<T>,
 }
 
 impl<T, U> AsyncDatabaseTransactionHandler<T, U>
@@ -24,7 +24,7 @@ where
     U: Connection,
 {
     pub fn new(conn: U) -> AsyncDatabaseTransactionHandler<T, U> {
-        let (tx, rx) = mpsc::channel::<T>(32);
+        let (tx, rx) = mpsc::unbounded_channel::<T>();
         AsyncDatabaseTransactionHandler {
             conn: conn,
             tx: tx,
@@ -32,7 +32,7 @@ where
         }
     }
 
-    pub fn get_sender(&self) -> Sender<T> {
+    pub fn get_sender(&self) -> UnboundedSender<T> {
         self.tx.clone()
     }
 
@@ -41,7 +41,7 @@ where
             match self.rx.recv().await {
                 Some(transaction) => {
                     println!("Received transaction. Sending to handler.");
-                    transaction.handle(&mut self.conn)
+                    transaction.handle(&mut self.conn);
                 }
                 None => {
                     //Do nothing
