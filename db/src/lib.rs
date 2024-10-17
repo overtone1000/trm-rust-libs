@@ -5,7 +5,7 @@ pub trait DatabaseTransactable<U>
 where
     U: Connection,
 {
-    fn handle(&self, conn: &mut U);
+    fn handle(self: Self, conn: &mut U);
 }
 
 pub struct AsyncDatabaseTransactionHandler<T, U>
@@ -36,12 +36,15 @@ where
         self.tx.clone()
     }
 
-    pub async fn start(&mut self) {
+    pub async fn start(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         loop {
             match self.rx.recv().await {
-                Some(transaction) => transaction.handle(&mut self.conn),
+                Some(transaction) => {
+                    println!("Received transaction. Sending to handler.");
+                    transaction.handle(&mut self.conn)
+                }
                 None => {
-                    //do nothing
+                    //Do nothing
                 }
             }
         }
