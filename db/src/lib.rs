@@ -10,14 +10,13 @@ where
     fn handle(self: Self, conn: &mut U);
 }
 
-pub struct AsyncDatabaseTransactionHandler<T, U, V>
+pub struct AsyncDatabaseTransactionHandler<T, U>
 where
     T: DatabaseTransactable<U>,
-    U: Connection,
-    V: Fn() -> U,
+    U: Connection
 {
     conn: Option<U>,
-    conn_builder: V,
+    conn_builder: fn() -> U,
     stopwatch: stopwatch::Stopwatch,
     tx: UnboundedSender<T>,
     rx: UnboundedReceiver<T>,
@@ -26,13 +25,12 @@ where
 const CONNECTION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(20);
 const SLEEP_DURATION: std::time::Duration = std::time::Duration::from_millis(100);
 
-impl<T, U, V> AsyncDatabaseTransactionHandler<T, U, V>
+impl<T, U> AsyncDatabaseTransactionHandler<T, U>
 where
     T: DatabaseTransactable<U>,
     U: Connection,
-    V: Fn() -> U,
 {
-    pub fn new(conn_builder: V) -> AsyncDatabaseTransactionHandler<T, U, V> {
+    pub fn new(conn_builder: fn()->U) -> AsyncDatabaseTransactionHandler<T, U> {
         let (tx, rx) = mpsc::unbounded_channel::<T>();
         AsyncDatabaseTransactionHandler {
             conn: None,
