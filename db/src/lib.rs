@@ -24,7 +24,7 @@ where
 }
 
 const CONNECTION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(20);
-const SLEEP_DURATION: std::time::Duration = std::time::Duration::from_millis(200);
+const SLEEP_DURATION: std::time::Duration = std::time::Duration::from_millis(100);
 
 impl<T, U, V> AsyncDatabaseTransactionHandler<T, U, V>
 where
