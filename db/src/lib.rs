@@ -1,3 +1,5 @@
+use std::thread::sleep;
+
 use diesel::Connection;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
@@ -8,25 +10,34 @@ where
     fn handle(self: Self, conn: &mut U);
 }
 
-pub struct AsyncDatabaseTransactionHandler<T, U>
+pub struct AsyncDatabaseTransactionHandler<T, U, V>
 where
     T: DatabaseTransactable<U>,
     U: Connection,
+    V: Fn() -> U,
 {
-    conn: U,
+    conn: Option<U>,
+    conn_builder: V,
+    stopwatch: stopwatch::Stopwatch,
     tx: UnboundedSender<T>,
     rx: UnboundedReceiver<T>,
 }
 
-impl<T, U> AsyncDatabaseTransactionHandler<T, U>
+const CONNECTION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(20);
+const SLEEP_DURATION: std::time::Duration = std::time::Duration::from_millis(200);
+
+impl<T, U, V> AsyncDatabaseTransactionHandler<T, U, V>
 where
     T: DatabaseTransactable<U>,
     U: Connection,
+    V: Fn() -> U,
 {
-    pub fn new(conn: U) -> AsyncDatabaseTransactionHandler<T, U> {
+    pub fn new(conn_builder: V) -> AsyncDatabaseTransactionHandler<T, U, V> {
         let (tx, rx) = mpsc::unbounded_channel::<T>();
         AsyncDatabaseTransactionHandler {
-            conn: conn,
+            conn: None,
+            conn_builder: conn_builder,
+            stopwatch: stopwatch::Stopwatch::new(),
             tx: tx,
             rx: rx,
         }
@@ -40,11 +51,29 @@ where
         loop {
             match self.rx.recv().await {
                 Some(transaction) => {
+                    self.stopwatch.reset();
+
                     println!("Received transaction. Sending to handler.");
-                    transaction.handle(&mut self.conn);
+
+                    if self.conn.is_none() {
+                        self.conn = Some((self.conn_builder)());
+                    }
+
+                    let conn: &mut U = &mut (self
+                        .conn
+                        .as_mut()
+                        .expect("Should have just been created if it was none before."));
+
+                    transaction.handle(conn);
                 }
                 None => {
-                    //Do nothing
+                    if self.conn.is_some() && self.stopwatch.elapsed() > CONNECTION_TIMEOUT {
+                        self.conn = None;
+                        self.stopwatch.reset();
+                    } else if !self.stopwatch.is_running() {
+                        self.stopwatch.start();
+                    }
+                    sleep(SLEEP_DURATION);
                 }
             }
         }
