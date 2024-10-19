@@ -32,26 +32,43 @@ where
     <<S as HttpService<hyper::body::Incoming>>::ResBody as hyper::body::Body>::Data: Send,
 {
     let socket = SocketAddr::new(ip, port);
-    let listener = TcpListener::bind(socket).await?;
+
+    let listener: TcpListener;
+    loop {
+        match TcpListener::bind(socket).await {
+            Ok(res) => {
+                listener = res;
+                break;
+            }
+            Err(_) => {
+                eprintln!("Couldn't bind port. Retrying.");
+                tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+            }
+        }
+    }
 
     loop {
-        let (tcp, _) = listener.accept().await?;
-        //let (call_tcp_stream, _) = call_listener.accept().await?;
+        match listener.accept().await {
+            Ok((tcp, _)) => {
+                //Need to spawn these as separate tasks...
+                let io = TokioIo::new(tcp);
+                let clone = service.clone();
 
-        //Need to spawn these as separate tasks...
-        let io = TokioIo::new(tcp);
-        let clone = service.clone();
-
-        tokio::task::spawn(async move {
-            // Handle the connection from the client using HTTP1 and pass any
-            // HTTP requests received on that connection to the `hello` function
-            if let Err(err) = http1::Builder::new()
-                .timer(TokioTimer::new())
-                .serve_connection(io, clone)
-                .await
-            {
-                println!("Error serving connection: {:?}", err);
+                tokio::task::spawn(async move {
+                    // Handle the connection from the client using HTTP1 and pass any
+                    // HTTP requests received on that connection to the `hello` function
+                    if let Err(err) = http1::Builder::new()
+                        .timer(TokioTimer::new())
+                        .serve_connection(io, clone)
+                        .await
+                    {
+                        println!("Error serving connection: {:?}", err);
+                    }
+                });
             }
-        });
+            Err(_) => {
+                eprintln!("Couldn't accept tcp, retrying.")
+            }
+        };
     }
 }
