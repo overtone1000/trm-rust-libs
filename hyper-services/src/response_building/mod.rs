@@ -1,4 +1,4 @@
-use std::{future::Future, pin::Pin};
+use std::{fs::FileType, future::Future, pin::Pin};
 
 use futures_util::{future::BoxFuture, TryStreamExt};
 use http_body_util::{combinators::BoxBody, BodyExt, Full};
@@ -40,33 +40,63 @@ pub fn bad_request() -> HandlerResponse {
         .expect("Should produce response.")
 }
 
-pub async fn send_file(path: String) -> HandlerResult {
-    if path.contains("..") {
+const SUFFIXES_TO_TRY: [&str; 3] = ["", ".html", "/index.html"];
+pub async fn send_file(file_system_root_directory: &str, request_path: &str) -> HandlerResult {
+    if request_path.contains("..") {
         //Reject attempts to access parent directories
         return Ok(bad_request());
     } else {
-        let path = ".".to_string() + path.as_str(); //need to prepend to get to this file system.
-        eprintln!("Need to point this at a safe directory to avoid inappropriately exposing files in the working directory.");
+        let path = file_system_root_directory.to_string() + request_path; //need to prepend to get to this file system.
+        for suffix in SUFFIXES_TO_TRY {
+            let final_path = path.to_string() + suffix;
+            match tokio::fs::File::open(&final_path).await {
+                Ok(file) => match file.metadata().await {
+                    Ok(meta) => {
+                        if meta.is_file() {
+                            let suffix = final_path.split_terminator(".").last();
 
-        println!("Trying to open file {}", path);
-        match tokio::fs::File::open(path).await {
-            Ok(file) => {
-                let reader_stream: tokio_util::io::ReaderStream<tokio::fs::File> =
-                    tokio_util::io::ReaderStream::new(file);
-                let boxed_body = stream_to_boxed_body(reader_stream);
+                            let content_type = match suffix {
+                                Some(suffix) => match suffix {
+                                    "js" => "text/javascript",
+                                    "ico" => " image/x-icon",
+                                    "txt" => "text/plain",
+                                    "css" => "text/css",
+                                    "csv" => "text/csv",
+                                    "jpg" | "jpeg" => "image/jpeg",
+                                    "png" => "image/png",
+                                    "tif" | "tiff" => "image/tiff",
+                                    _ => {
+                                        eprintln!(
+                                            "Couldn't determine file type for {}",
+                                            final_path
+                                        );
+                                        "text/plain"
+                                    }
+                                },
+                                None => {
+                                    eprintln!("Couldn't determine file type for {}", final_path);
+                                    "text/plain"
+                                }
+                            };
+                            let reader_stream: tokio_util::io::ReaderStream<tokio::fs::File> =
+                                tokio_util::io::ReaderStream::new(file);
+                            let boxed_body = stream_to_boxed_body(reader_stream);
 
-                // Send response
-                let response = Response::builder()
-                    .status(hyper::StatusCode::OK)
-                    .body(boxed_body)
-                    .unwrap();
+                            // Send response
+                            let response = Response::builder()
+                                .status(hyper::StatusCode::OK)
+                                .header("Content-Type", content_type)
+                                .body(boxed_body)
+                                .unwrap();
 
-                Ok(response)
-            }
-            Err(e) => {
-                eprintln!("{:?}", e);
-                return Ok(not_found());
+                            return Ok(response);
+                        }
+                    }
+                    Err(_) => {}
+                },
+                Err(_) => {}
             }
         }
+        return Ok(not_found());
     }
 }
