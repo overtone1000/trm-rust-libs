@@ -1,7 +1,7 @@
 use std::io::BufReader;
 
 use lettre::{
-    message::Mailbox,
+    message::{header, Mailbox, MultiPart, SinglePart},
     transport::smtp::{
         authentication::{Credentials, Mechanism},
         client::TlsParametersBuilder,
@@ -66,7 +66,19 @@ pub fn send_mail(
         .reply_to(sender)
         .to(recipient.parse()?)
         .subject(subject)
-        .body(body)?;
+        .multipart(
+            MultiPart::alternative() // This is composed of two parts.
+                .singlepart(
+                    SinglePart::builder()
+                        .header(header::ContentType::TEXT_PLAIN)
+                        .body(body.to_string()), // Every message should have a plain text fallback.
+                )
+                .singlepart(
+                    SinglePart::builder()
+                        .header(header::ContentType::TEXT_HTML)
+                        .body(body),
+                ),
+        )?;
 
     let sender = get_transport(service)?;
 
