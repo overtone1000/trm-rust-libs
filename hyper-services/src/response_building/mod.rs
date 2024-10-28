@@ -46,7 +46,11 @@ pub async fn send_file(file_system_root_directory: &str, request_path: &str) -> 
         //Reject attempts to access parent directories
         return Ok(bad_request());
     } else {
-        let path = file_system_root_directory.to_string() + request_path; //need to prepend to get to this file system.
+        let mut path = file_system_root_directory.to_string() + request_path; //need to prepend to get to this file system.
+
+        if path.ends_with("/") {
+            path = path.split_at(path.len() - 1).0.to_string();
+        }
         for suffix in SUFFIXES_TO_TRY {
             let final_path = path.to_string() + suffix;
             match tokio::fs::File::open(&final_path).await {
@@ -54,9 +58,9 @@ pub async fn send_file(file_system_root_directory: &str, request_path: &str) -> 
                     Ok(meta) => {
                         if meta.is_file() {
                             let suffix = final_path.split_terminator(".").last();
-
                             let content_type = match suffix {
                                 Some(suffix) => match suffix {
+                                    "html" => "text/html",
                                     "js" => "text/javascript",
                                     "ico" => " image/x-icon",
                                     "txt" => "text/plain",
