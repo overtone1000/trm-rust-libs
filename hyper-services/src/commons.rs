@@ -8,14 +8,19 @@ use hyper::{
     Request, Response,
 };
 
-pub type HandlerError = Box<dyn std::error::Error + Send + Sync>;
-pub type HandlerBody = BoxBody<Bytes, HandlerError>;
-pub type HandlerResponse = Response<HandlerBody>;
-pub type HandlerResult = Result<HandlerResponse, HandlerError>;
-pub type HandlerFuture = Pin<Box<dyn Future<Output = HandlerResult> + Send>>;
+pub enum HandlerBody {
+    Empty,
+    BoxBody(BoxBody<Bytes, HandlerError>),
+}
 
-pub enum ResponseProcessingStepResult {
-    Continue(HandlerResponse),
-    Complete(HandlerResponse),
+pub type HandlerError = Box<dyn std::error::Error + Send + Sync>;
+//pub type HandlerBody = BoxBody<Bytes, HandlerError>;
+pub type HandlerResponse<T> = Response<T>;
+pub type HandlerResult<T> = Result<HandlerResponse<T>, HandlerError>;
+pub type HandlerFuture<T> = Pin<Box<dyn Future<Output = HandlerResult<T>> + Send>>;
+
+pub enum ResponseGate<T> {
+    Continue(),
+    ImmediateReturn(HandlerResponse<T>),
     Error(HandlerError),
 }

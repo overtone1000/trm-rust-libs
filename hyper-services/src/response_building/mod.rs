@@ -13,9 +13,11 @@ use tokio_util::io::ReaderStream;
 use crate::commons::{HandlerBody, HandlerError, HandlerResponse, HandlerResult};
 
 pub fn full_to_boxed_body<T: Into<Bytes>>(chunk: T) -> HandlerBody {
-    Full::new(chunk.into())
-        .map_err(|never| match never {})
-        .boxed()
+    HandlerBody::BoxBody(
+        Full::new(chunk.into())
+            .map_err(|never| match never {})
+            .boxed(),
+    )
 }
 
 pub fn stream_to_boxed_body(stream: ReaderStream<tokio::fs::File>) -> HandlerBody {
@@ -23,17 +25,17 @@ pub fn stream_to_boxed_body(stream: ReaderStream<tokio::fs::File>) -> HandlerBod
         e => Box::new(e) as HandlerError,
     });
     let stream_body = http_body_util::StreamBody::new(remapped_stream.map_ok(Frame::data));
-    stream_body.boxed()
+    HandlerBody::BoxBody(stream_body.boxed())
 }
 
-pub fn not_found() -> HandlerResponse {
+pub fn not_found() -> HandlerResponse<HandlerBody> {
     Response::builder()
         .status(hyper::StatusCode::NOT_FOUND)
         .body(full_to_boxed_body("Resource not found."))
         .expect("Should produce response.")
 }
 
-pub fn bad_request() -> HandlerResponse {
+pub fn bad_request() -> HandlerResponse<HandlerBody> {
     Response::builder()
         .status(hyper::StatusCode::BAD_REQUEST)
         .body(full_to_boxed_body("Malformed request."))
@@ -41,7 +43,10 @@ pub fn bad_request() -> HandlerResponse {
 }
 
 const SUFFIXES_TO_TRY: [&str; 3] = ["", ".html", "/index.html"];
-pub async fn send_file(file_system_root_directory: &str, request_path: &str) -> HandlerResult {
+pub async fn send_file(
+    file_system_root_directory: &str,
+    request_path: &str,
+) -> HandlerResult<HandlerBody> {
     if request_path.contains("..") {
         //Reject attempts to access parent directories
         return Ok(bad_request());
@@ -89,10 +94,9 @@ pub async fn send_file(file_system_root_directory: &str, request_path: &str) -> 
                             // Send response
                             let response = Response::builder()
                                 .status(hyper::StatusCode::OK)
-                                .header("Content-Type", content_type)
+                                .header(hyper::header::CONTENT_TYPE, content_type)
                                 .body(boxed_body)
                                 .unwrap();
-
                             return Ok(response);
                         }
                     }

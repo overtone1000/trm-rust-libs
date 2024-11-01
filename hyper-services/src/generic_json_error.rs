@@ -1,7 +1,7 @@
 use hyper::Response;
 use serde::Serialize;
 
-use crate::response_building::full_to_boxed_body;
+use crate::{commons::HandlerBody, response_building::full_to_boxed_body};
 
 #[derive(Serialize)]
 struct ErrorContents {
@@ -13,14 +13,7 @@ struct Error {
     error: ErrorContents,
 }
 
-pub fn generic_json_error(
-    message: &str,
-) -> Response<
-    http_body_util::combinators::BoxBody<
-        hyper::body::Bytes,
-        Box<dyn std::error::Error + Send + Sync>,
-    >,
-> {
+pub fn generic_json_error(message: &str) -> Response<HandlerBody> {
     let e = Error {
         error: ErrorContents {
             message: message.to_string(),
@@ -32,14 +25,7 @@ pub fn generic_json_error(
     ))
 }
 
-pub fn generic_json_error_from_debug<T>(
-    e: T,
-) -> Response<
-    http_body_util::combinators::BoxBody<
-        hyper::body::Bytes,
-        Box<dyn std::error::Error + Send + Sync>,
-    >,
->
+pub fn generic_json_error_from_debug<T>(e: T) -> Response<HandlerBody>
 where
     T: std::fmt::Debug,
 {

@@ -2,11 +2,11 @@ use std::marker::PhantomData;
 
 use hyper::{body::Incoming, service::Service, Request};
 
-use crate::commons::{HandlerError, HandlerFuture, HandlerResponse, HandlerResult};
+use crate::commons::{HandlerBody, HandlerError, HandlerFuture, HandlerResponse, HandlerResult};
 
 #[trait_variant::make(StatelessHandler: Send)]
 pub trait LocalStatelessHandler: Clone {
-    async fn handle_request(request: Request<Incoming>) -> HandlerResult;
+    async fn handle_request(request: Request<Incoming>) -> HandlerResult<HandlerBody>;
 }
 
 #[derive(Clone)]
@@ -32,9 +32,9 @@ impl<T> Service<Request<Incoming>> for StatelessService<T>
 where
     T: StatelessHandler + 'static,
 {
-    type Response = HandlerResponse;
+    type Response = HandlerResponse<HandlerBody>;
     type Error = HandlerError;
-    type Future = HandlerFuture;
+    type Future = HandlerFuture<HandlerBody>;
 
     fn call(&self, request: Request<Incoming>) -> Self::Future {
         Box::pin(T::handle_request(request))
