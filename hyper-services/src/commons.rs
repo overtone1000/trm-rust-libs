@@ -13,3 +13,9 @@ pub type HandlerBody = BoxBody<Bytes, HandlerError>;
 pub type HandlerResponse = Response<HandlerBody>;
 pub type HandlerResult = Result<HandlerResponse, HandlerError>;
 pub type HandlerFuture = Pin<Box<dyn Future<Output = HandlerResult> + Send>>;
+
+pub enum ResponseProcessingStepResult {
+    Continue(HandlerResponse),
+    Complete(HandlerResponse),
+    Error(HandlerError),
+}
