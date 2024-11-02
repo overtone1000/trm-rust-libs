@@ -10,14 +10,16 @@ use hyper::{
 
 use tokio_util::io::ReaderStream;
 
-use crate::commons::{HandlerBody, HandlerError, HandlerResponse, HandlerResult};
+use crate::commons::{HandlerBody, HandlerError, HandlerResult};
 
 pub fn full_to_boxed_body<T: Into<Bytes>>(chunk: T) -> HandlerBody {
-    HandlerBody::BoxBody(
-        Full::new(chunk.into())
-            .map_err(|never| match never {})
-            .boxed(),
-    )
+    Full::new(chunk.into())
+        .map_err(|never| match never {})
+        .boxed()
+}
+
+pub fn empty_body() -> HandlerBody {
+    full_to_boxed_body("")
 }
 
 pub fn stream_to_boxed_body(stream: ReaderStream<tokio::fs::File>) -> HandlerBody {
@@ -25,17 +27,17 @@ pub fn stream_to_boxed_body(stream: ReaderStream<tokio::fs::File>) -> HandlerBod
         e => Box::new(e) as HandlerError,
     });
     let stream_body = http_body_util::StreamBody::new(remapped_stream.map_ok(Frame::data));
-    HandlerBody::BoxBody(stream_body.boxed())
+    stream_body.boxed()
 }
 
-pub fn not_found() -> HandlerResponse<HandlerBody> {
+pub fn not_found() -> Response<HandlerBody> {
     Response::builder()
         .status(hyper::StatusCode::NOT_FOUND)
         .body(full_to_boxed_body("Resource not found."))
         .expect("Should produce response.")
 }
 
-pub fn bad_request() -> HandlerResponse<HandlerBody> {
+pub fn bad_request() -> Response<HandlerBody> {
     Response::builder()
         .status(hyper::StatusCode::BAD_REQUEST)
         .body(full_to_boxed_body("Malformed request."))
@@ -43,10 +45,7 @@ pub fn bad_request() -> HandlerResponse<HandlerBody> {
 }
 
 const SUFFIXES_TO_TRY: [&str; 3] = ["", ".html", "/index.html"];
-pub async fn send_file(
-    file_system_root_directory: &str,
-    request_path: &str,
-) -> HandlerResult<HandlerBody> {
+pub async fn send_file(file_system_root_directory: &str, request_path: &str) -> HandlerResult {
     if request_path.contains("..") {
         //Reject attempts to access parent directories
         return Ok(bad_request());

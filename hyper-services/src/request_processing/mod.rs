@@ -3,8 +3,9 @@ use http_body_util::BodyExt;
 use hyper::{body::Incoming, client::conn::http1::Parts, Request, Response};
 
 use crate::{
-    commons::{HandlerError, ResponseGate},
+    commons::{Handler, HandlerBody, HandlerError},
     generic_json_error::generic_json_error_from_debug,
+    response_building::{empty_body, full_to_boxed_body},
 };
 
 pub async fn get_request_body_as_string(request: Incoming) -> Result<String, HandlerError> {
@@ -14,10 +15,10 @@ pub async fn get_request_body_as_string(request: Incoming) -> Result<String, Han
 }
 
 pub async fn check_basic_authentication(
-    request_parts: hyper::http::request::Parts,
+    request_parts: &hyper::http::request::Parts,
     realm: &str,
     validator: impl Fn(&str) -> bool,
-) -> ResponseGate<()> {
+) -> Handler {
     match request_parts
         .headers
         .get(hyper::http::header::AUTHORIZATION)
@@ -27,30 +28,26 @@ pub async fn check_basic_authentication(
                 Ok(str) => {
                     let words: Vec<&str> = str.split_whitespace().collect();
                     if words[0] == "Basic" && validator(words[1]) {
-                        return ResponseGate::Continue();
+                        return Handler::Continue;
                     } else {
-                        return ResponseGate::ImmediateReturn(
-                            Response::builder()
-                                .status(hyper::StatusCode::UNAUTHORIZED)
-                                .body(())
-                                .expect("Response should build."),
-                        );
+                        return Handler::ImmediateReturn(Ok(Response::builder()
+                            .status(hyper::StatusCode::UNAUTHORIZED)
+                            .body(empty_body())
+                            .expect("Response should build.")));
                     }
                 }
                 Err(e) => {
-                    return ResponseGate::Error(Box::new(e));
+                    return Handler::ImmediateReturn(Err(Box::new(e)));
                 }
             };
         }
-        None => ResponseGate::ImmediateReturn(
-            Response::builder()
-                .status(hyper::StatusCode::UNAUTHORIZED)
-                .header(
-                    hyper::header::WWW_AUTHENTICATE,
-                    "Basic realm=\"".to_string() + realm + "\"",
-                )
-                .body(())
-                .expect("Response should build."),
-        ),
+        None => Handler::ImmediateReturn(Ok(Response::builder()
+            .status(hyper::StatusCode::UNAUTHORIZED)
+            .header(
+                hyper::header::WWW_AUTHENTICATE,
+                "Basic realm=\"".to_string() + realm + "\"",
+            )
+            .body(empty_body())
+            .expect("Response should build."))),
     }
 }

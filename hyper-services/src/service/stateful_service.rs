@@ -1,10 +1,10 @@
-use hyper::{body::Incoming, service::Service, Request};
+use hyper::{body::Incoming, service::Service, Request, Response};
 
-use crate::commons::{HandlerBody, HandlerError, HandlerFuture, HandlerResponse, HandlerResult};
+use crate::commons::{HandlerBody, HandlerError, HandlerFuture, HandlerResult};
 
 #[trait_variant::make(StatefulHandler: Send)]
 pub trait _LocalStatefulHandler: Clone {
-    async fn handle_request(self: Self, request: Request<Incoming>) -> HandlerResult<HandlerBody>;
+    async fn handle_request(self: Self, request: Request<Incoming>) -> HandlerResult;
 }
 
 #[derive(Clone)]
@@ -28,9 +28,9 @@ impl<T> Service<Request<Incoming>> for StatefulService<T>
 where
     T: StatefulHandler + 'static,
 {
-    type Response = HandlerResponse<HandlerBody>;
+    type Response = Response<HandlerBody>;
     type Error = HandlerError;
-    type Future = HandlerFuture<HandlerBody>;
+    type Future = HandlerFuture;
 
     fn call(&self, request: Request<Incoming>) -> Self::Future {
         Box::pin(T::handle_request(self.handler.clone(), request))
