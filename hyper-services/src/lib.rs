@@ -33,6 +33,8 @@ where
 {
     let socket = SocketAddr::new(ip, port);
 
+    println!("Binding to {}:{}", ip, port);
+
     let listener: TcpListener;
     loop {
         match TcpListener::bind(socket).await {

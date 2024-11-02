@@ -16,5 +16,6 @@ pub type HandlerFuture = Pin<Box<dyn Future<Output = HandlerResult> + Send>>;
 
 pub enum Handler {
     Continue,
-    ImmediateReturn(HandlerResult),
+    ImmediateReturn(Response<HandlerBody>),
+    Error(HandlerError),
 }
