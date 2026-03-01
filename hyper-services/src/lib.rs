@@ -49,6 +49,7 @@ where
         }
     }
 
+    println!("Starting listen loop on {}:{}", ip, port);
     loop {
         match listener.accept().await {
             Ok((tcp, _)) => {
