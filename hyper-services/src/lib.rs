@@ -16,6 +16,7 @@ pub mod generic_json_error;
 pub mod request_processing;
 pub mod response_building;
 pub mod service;
+pub mod web_socket;
 
 pub async fn spawn_server<S>(
     ip: IpAddr,
