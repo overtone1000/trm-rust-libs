@@ -1,0 +1,9 @@
+[package]
+name = "websocket"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hyper-tungstenite = "0"
+hyper-util = { version = "^0.1", features = ["full"] }
+futures-util = "^0"

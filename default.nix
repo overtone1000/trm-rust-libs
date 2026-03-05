@@ -10,7 +10,11 @@ stdenv.mkDerivation {
         cargo
         gcc
         rustfmt
-        clippy 
+        clippy
+
+        #Needed to build non-rust packages (cargo build complained, these two packages fixed it)
+        pkg-config
+        openssl
     ];
 
     # Certain Rust tools won't work without this
