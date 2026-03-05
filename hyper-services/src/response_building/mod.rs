@@ -12,14 +12,23 @@ use tokio_util::io::ReaderStream;
 
 use crate::commons::{HandlerBody, HandlerError, HandlerResult};
 
-pub fn full_to_boxed_body<T: Into<Bytes>>(chunk: T) -> HandlerBody {
-    Full::new(chunk.into())
+pub fn bytes_to_boxed_body<T: Into<Bytes>>(chunk: T) -> HandlerBody {
+    box_existing_full(Full::new(chunk.into()))
+}
+
+pub fn box_existing_full(full: Full<Bytes>) -> HandlerBody {
+    full
         .map_err(|never| match never {})
         .boxed()
 }
 
+pub fn box_existing_response(response: Response<Full<Bytes>>) -> Response<HandlerBody> {
+    let (response_parts, response_body)=response.into_parts();
+    Response::from_parts(response_parts, box_existing_full(response_body))
+}
+
 pub fn empty_body() -> HandlerBody {
-    full_to_boxed_body("")
+    bytes_to_boxed_body("")
 }
 
 pub fn stream_to_boxed_body(stream: ReaderStream<tokio::fs::File>) -> HandlerBody {
@@ -33,14 +42,14 @@ pub fn stream_to_boxed_body(stream: ReaderStream<tokio::fs::File>) -> HandlerBod
 pub fn not_found() -> Response<HandlerBody> {
     Response::builder()
         .status(hyper::StatusCode::NOT_FOUND)
-        .body(full_to_boxed_body("Resource not found."))
+        .body(bytes_to_boxed_body("Resource not found."))
         .expect("Should produce response.")
 }
 
 pub fn bad_request() -> Response<HandlerBody> {
     Response::builder()
         .status(hyper::StatusCode::BAD_REQUEST)
-        .body(full_to_boxed_body("Malformed request."))
+        .body(bytes_to_boxed_body("Malformed request."))
         .expect("Should produce response.")
 }
 

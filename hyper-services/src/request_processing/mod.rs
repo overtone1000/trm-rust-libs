@@ -7,7 +7,7 @@ use tokio::time::error::Elapsed;
 use crate::{
     commons::{Handler, HandlerBody, HandlerError},
     generic_json_error::generic_json_error_from_debug,
-    response_building::{empty_body, full_to_boxed_body},
+    response_building::{empty_body, bytes_to_boxed_body},
 };
 
 pub async fn get_request_body_as_string(request: Incoming) -> Result<String, HandlerError> {

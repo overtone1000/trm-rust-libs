@@ -1,7 +1,7 @@
 use hyper::Response;
 use serde::Serialize;
 
-use crate::{commons::HandlerBody, response_building::full_to_boxed_body};
+use crate::{commons::HandlerBody, response_building::bytes_to_boxed_body};
 
 #[derive(Serialize)]
 struct ErrorContents {
@@ -20,7 +20,7 @@ pub fn generic_json_error(message: &str) -> Response<HandlerBody> {
         },
     };
 
-    Response::new(full_to_boxed_body(
+    Response::new(bytes_to_boxed_body(
         serde_json::to_string(&e).expect("Couldn't serialize error message."),
     ))
 }
