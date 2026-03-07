@@ -5,7 +5,7 @@ use hyper::{
     server::conn::http1,
     service::HttpService,
 };
-use hyper_util::rt::{TokioIo, TokioTimer};
+use hyper_util::{client::legacy::connect::Connect, rt::{TokioIo, TokioTimer}};
 
 use service::stateless_service::{StatelessHandler, StatelessService};
 use tokio::net::TcpListener;
@@ -17,10 +17,25 @@ pub mod request_processing;
 pub mod response_building;
 pub mod service;
 
-pub async fn spawn_server<S>(
+pub struct ConnectionProperties
+{
+    pub with_upgrades:bool,
+}
+
+impl Default for ConnectionProperties
+{
+    fn default() -> Self {
+        Self { 
+            with_upgrades: false
+        }
+    }
+}
+
+pub(crate) async fn spawn_server<S>(
     ip: IpAddr,
     port: u16,
     service: S,
+    props: ConnectionProperties
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>
 where
     S: 'static + Clone + Send + HttpService<Incoming>,
@@ -57,21 +72,36 @@ where
                 let io = TokioIo::new(tcp);
                 let clone = service.clone();
 
-                tokio::task::spawn(async move {
-                    // Handle the connection from the client using HTTP1 and pass any
-                    // HTTP requests received on that connection to the `hello` function
-                    if let Err(err) = http1::Builder::new()
+                let connection: http1::Connection<TokioIo<tokio::net::TcpStream>, S>=http1::Builder::new()
                         .timer(TokioTimer::new())
-                        .serve_connection(io, clone)
-                        .await
-                    {
-                        println!("Error serving connection: {:?}", err);
-                    }
-                });
+                        .serve_connection(io, clone);
+
+
+                match props.with_upgrades
+                {
+                    true=>tokio::task::spawn(async move {handle_result(connection.with_upgrades().await)}),
+                    false=>tokio::task::spawn(async move {handle_result(connection.await)})
+                };
+
+                //Can't await, must be handled in spawned task!
+                //match result.await
+                //{
+                //    Ok(_)=>(),
+                //    Err(e)=>println!("Error serving connection: {:?}", e)
+                //};
             }
             Err(_) => {
                 eprintln!("Couldn't accept tcp, retrying.")
             }
         };
+    }
+}
+
+fn handle_result<T:std::error::Error>(result:Result<(),T>)->()
+{
+    match result
+    {
+        Ok(_)=>(),
+        Err(e)=>eprintln!("Listener error {:?}",e)
     }
 }

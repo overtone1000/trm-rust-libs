@@ -1,8 +1,8 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, net::IpAddr};
 
 use hyper::{body::Incoming, service::Service, Request, Response};
 
-use crate::commons::{HandlerBody, HandlerError, HandlerFuture, HandlerResult};
+use crate::{ConnectionProperties, commons::{HandlerBody, HandlerError, HandlerFuture, HandlerResult}, spawn_server};
 
 #[trait_variant::make(StatelessHandler: Send)]
 pub trait LocalStatelessHandler: Clone {
@@ -12,7 +12,7 @@ pub trait LocalStatelessHandler: Clone {
 #[derive(Clone)]
 pub struct StatelessService<T>
 where
-    T: StatelessHandler,
+    T: StatelessHandler+'static,
 {
     phantom_handler: PhantomData<T>,
 }
@@ -25,6 +25,22 @@ where
         StatelessService {
             phantom_handler: PhantomData,
         }
+    }
+
+    pub async fn start(
+        self,
+        ip: IpAddr,
+        port: u16,
+        //service: StatefulService<T>,
+        props: ConnectionProperties
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>
+    {
+        spawn_server(
+            ip,
+            port,
+            self,
+            props
+        ).await
     }
 }
 

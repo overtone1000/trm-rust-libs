@@ -1,6 +1,8 @@
+use std::net::IpAddr;
+
 use hyper::{body::Incoming, service::Service, Request, Response};
 
-use crate::commons::{HandlerBody, HandlerError, HandlerFuture, HandlerResult};
+use crate::{ConnectionProperties, commons::{HandlerBody, HandlerError, HandlerFuture, HandlerResult}, spawn_server};
 
 #[trait_variant::make(StatefulHandler: Send)]
 pub trait _LocalStatefulHandler: Clone {
@@ -17,10 +19,25 @@ where
 
 impl<T> StatefulService<T>
 where
-    T: StatefulHandler,
+    T: StatefulHandler+'static,
 {
     pub fn create(handler: T) -> StatefulService<T> {
         StatefulService { handler: handler }
+    }
+    pub async fn start(
+        self,
+        ip: IpAddr,
+        port: u16,
+        //service: StatefulService<T>,
+        props: ConnectionProperties
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>
+    {
+        spawn_server(
+            ip,
+            port,
+            self,
+            props
+        ).await
     }
 }
 
