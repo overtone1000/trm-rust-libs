@@ -5,7 +5,7 @@ use hyper::{
     server::conn::http1,
     service::HttpService,
 };
-use hyper_util::{client::legacy::connect::Connect, rt::{TokioIo, TokioTimer}};
+use hyper_util::rt::{TokioIo, TokioTimer};
 
 use service::stateless_service::{StatelessHandler, StatelessService};
 use tokio::net::TcpListener;
@@ -19,7 +19,7 @@ pub mod service;
 
 pub struct ConnectionProperties
 {
-    pub with_upgrades:bool,
+    pub with_upgrades:bool
 }
 
 impl Default for ConnectionProperties
