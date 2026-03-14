@@ -102,6 +102,6 @@ fn handle_result<T:std::error::Error>(result:Result<(),T>)->()
     match result
     {
         Ok(_)=>(),
-        Err(e)=>eprintln!("Listener error {:?}",e)
+        Err(e)=>eprintln!("Listener error {:?}. Could this be a misconfiguration of the service spawner in trm-rust-libs?",e)
     }
 }
