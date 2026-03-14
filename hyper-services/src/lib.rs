@@ -80,7 +80,7 @@ where
         Some(certs)=>{
              // Load public certificate.
                         
-            let mut server_config = match ServerConfig::builder()
+            let server_config = match ServerConfig::builder()
                 .with_no_client_auth()
                 .with_single_cert(certs.certs, certs.keys)
                 .map_err(|e|  std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
@@ -91,7 +91,10 @@ where
                         return Err(Box::new(e));
                     }
                 };
-            server_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec(), b"http/1.0".to_vec()];
+            
+            //This was causing failures. Didn't seem to iterate through the potential porotocls.
+            //server_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec(), b"http/1.0".to_vec()];
+            
             let tls_acceptor = TlsAcceptor::from(std::sync::Arc::new(server_config));
             Some(tls_acceptor)
         }
