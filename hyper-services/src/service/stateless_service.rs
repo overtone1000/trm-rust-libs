@@ -2,7 +2,7 @@ use std::{marker::PhantomData, net::IpAddr};
 
 use hyper::{body::Incoming, service::Service, Request, Response};
 
-use crate::{ConnectionProperties, commons::{HandlerBody, HandlerError, HandlerFuture, HandlerResult}, spawn_server};
+use crate::{commons::{HandlerBody, HandlerError, HandlerFuture, HandlerResult}, service::spawn::{ConnectionProperties, spawn_server}};
 
 #[trait_variant::make(StatelessHandler: Send)]
 pub trait LocalStatelessHandler: Clone {
