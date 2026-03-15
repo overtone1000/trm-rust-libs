@@ -18,6 +18,7 @@ const DECODER: base64::engine::GeneralPurpose = base64::engine::GeneralPurpose::
 );
 
 
+#[derive(Debug)]
 pub struct Auth {
     pub user:String,
     pub password:String
