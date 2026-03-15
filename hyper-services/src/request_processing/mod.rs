@@ -6,8 +6,16 @@ use crate::{
     commons::{Handler, HandlerError}, response_building::empty_body,
 };
 
+pub async fn collect_incoming(request: Incoming) -> Result<http_body_util::Collected<hyper::body::Bytes>, HandlerError> {
+    match request.collect().await
+    {
+        Ok(c)=>Ok(c),
+        Err(e)=>Err(Box::new(e))
+    }
+}
+
 pub async fn get_request_body_as_string(request: Incoming) -> Result<String, HandlerError> {
-    let collected_request = request.collect().await?.to_bytes().to_vec();
+    let collected_request = collect_incoming(request).await?.to_bytes().to_vec();
     let parsed_request = String::from_utf8(collected_request)?;
     Ok(parsed_request)
 }
