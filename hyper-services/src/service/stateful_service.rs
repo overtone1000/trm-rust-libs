@@ -24,6 +24,7 @@ where
     pub fn create(handler: T) -> StatefulService<T> {
         StatefulService { handler: handler }
     }
+
     pub async fn start(
         self,
         ip: IpAddr,
@@ -38,6 +39,11 @@ where
             self,
             props
         ).await
+    }
+
+    pub fn get_handler(&mut self)->&mut T
+    {
+        &mut self.handler
     }
 }
 
