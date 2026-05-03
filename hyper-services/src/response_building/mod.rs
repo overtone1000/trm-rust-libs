@@ -39,6 +39,13 @@ pub fn stream_to_boxed_body(stream: ReaderStream<tokio::fs::File>) -> HandlerBod
     stream_body.boxed()
 }
 
+pub fn ok() -> Response<HandlerBody> {
+    Response::builder()
+        .status(hyper::StatusCode::OK)
+        .body(bytes_to_boxed_body("Ok"))
+        .expect("Should produce response.")
+}
+
 pub fn not_found() -> Response<HandlerBody> {
     Response::builder()
         .status(hyper::StatusCode::NOT_FOUND)
@@ -50,6 +57,13 @@ pub fn bad_request() -> Response<HandlerBody> {
     Response::builder()
         .status(hyper::StatusCode::BAD_REQUEST)
         .body(bytes_to_boxed_body("Malformed request."))
+        .expect("Should produce response.")
+}
+
+pub fn server_side_failure() -> Response<HandlerBody> {
+    Response::builder()
+        .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
+        .body(bytes_to_boxed_body("Internal server error."))
         .expect("Should produce response.")
 }
 
