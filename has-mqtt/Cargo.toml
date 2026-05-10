@@ -1,0 +1,11 @@
+[package]
+name = "has-mqtt"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "^1", features = ["full"] }
+rumqttc="^0"
+
+serde = "1"
+serde_json = "1"
