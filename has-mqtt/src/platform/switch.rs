@@ -36,6 +36,10 @@ impl Switch
             availability:Availability::new(unique_id)
         }
     }
+
+    pub fn get_state_topic(&self)->String{self.state_topic.clone()}
+    pub fn get_command_topic(&self)->String{self.command_topic.clone()}
+    pub fn availability(&self)->&Availability{&self.availability}
 }
 
 impl Platform for Switch
@@ -43,4 +47,9 @@ impl Platform for Switch
     fn get_platform()->String {
         SWITCH_COMPONENT.to_string()
     }
+}
+
+pub trait SwitchHandler
+{
+    fn handle_state_change(switch:&Switch)->();
 }

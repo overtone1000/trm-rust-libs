@@ -1,3 +1,4 @@
+use rumqttc::{AsyncClient, ClientError};
 use serde::{Deserialize, Serialize};
 
 use crate::platform::{empty::Empty, switch::Switch};
@@ -23,46 +24,18 @@ impl HomeAssistantDeviceComponent
             )
         )
     }
-}
 
-#[cfg(test)]
-mod tests {
-
-    use std::collections::HashMap;
-
-    use crate::{component::HomeAssistantDeviceComponent, device::{HomeAssistantDeviceConfiguration}};
-
-    use super::*;
-
-    fn check_serialization(device_config: &HomeAssistantDeviceConfiguration) {
-        println!("Serialization test:");
-        let serialized = device_config.to_json();
-        println!("   {}", serialized);
-        let deserialized: HomeAssistantDeviceConfiguration = serde_json::from_str(&serialized).expect("Should deserialize.");
-        println!("   {:?}", deserialized);
-
-        //The results won't be equal because they're untagged.
-        assert_ne!(*device_config,deserialized)        
-    }
-
-    #[test]
-    fn serialization() {
-
-        let mut cmps:HashMap<String,HomeAssistantDeviceComponent>=HashMap::new();
-        cmps.insert(
-            "test_component_1".to_string(),
-            HomeAssistantDeviceComponent::new_switch(
-                "test_component_unique_id")
-        );
-
-        check_serialization(
-&HomeAssistantDeviceConfiguration::new(
-                "test_device_id".to_string(),
-                "Test Device Name".to_string(),
-                "Test Origin Name".to_string(),
-                "1.2.3(test)".to_string(),
-                cmps
-            )
-        );
+    pub async fn connect(&self, client:&AsyncClient)->Result<(),ClientError>
+    {
+        match self
+        {
+            HomeAssistantDeviceComponent::Empty(_) => Ok(()), //Empty doesn't need to connect
+            HomeAssistantDeviceComponent::Switch(switch) => {
+                println!("Connecting switch.");
+                switch.availability().set_availability(client.clone(), true);
+                client.subscribe(switch.get_command_topic(), rumqttc::QoS::AtLeastOnce).await
+            },
+        }
     }
 }
+

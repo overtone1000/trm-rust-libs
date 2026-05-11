@@ -1,4 +1,7 @@
+use rumqttc::AsyncClient;
 use serde::{Deserialize, Serialize};
+
+use crate::mqtt_client::HASMQTTClient;
 
 const TOPIC_TAIL:&str="/availability";
 const PAYLOAD_AVAILABLE:&str="online"; //This is the default.
@@ -19,5 +22,15 @@ impl Availability{
         Availability{
             topic:unique_id+TOPIC_TAIL
         }
+    }
+
+    pub fn set_availability(&self,client:AsyncClient,is_available:bool)->(){
+        let payload = match is_available
+        {
+            true=>PAYLOAD_AVAILABLE,
+            false=>PAYLOAD_NOT_AVAILABLE
+        };
+        println!("Setting availability {} to {}",self.topic,payload);
+        HASMQTTClient::spawn_publish(client, self.topic.clone(), rumqttc::QoS::AtLeastOnce, false, payload);
     }
 }
