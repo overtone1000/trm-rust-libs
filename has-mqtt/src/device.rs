@@ -1,21 +1,21 @@
 
 use std::collections::HashMap;
 
-use rumqttc::{AsyncClient, QoS};
+use rumqttc::{AsyncClient, ClientError, QoS};
 use serde::{Deserialize, Serialize};
 
-use crate::{component::HomeAssistantDeviceComponent, mqtt_client::HASMQTTClient};
+use crate::{component::HomeAssistantDeviceComponent, mqtt_client::{EventHandlers, HASMQTTClient}};
 
 const TOPIC_TAIL:&str="/state";
 
-#[derive(Serialize,Deserialize,Debug,PartialEq)]
+#[derive(Serialize)]
 struct Device
 {
     ids:String, //mandatory
     name:String, //mandatory
 }
 
-#[derive(Serialize,Deserialize,Debug,PartialEq)]
+#[derive(Serialize)]
 struct Origin
 {
     name:String, //mandatory
@@ -23,7 +23,7 @@ struct Origin
 
 }
 
-#[derive(Serialize,Deserialize,Debug,PartialEq)]
+#[derive(Serialize)]
 pub struct HomeAssistantDeviceConfiguration
 {
     dev:Device,
@@ -71,10 +71,20 @@ impl HomeAssistantDeviceConfiguration
         discovery_topic
     }
 
-    pub fn publish_discovery(&self, client:&AsyncClient, discovery_prefix:String, object_id:&str)->()
+    pub async fn publish_discovery(&self, client:&AsyncClient, discovery_prefix:String, object_id:&str)->()
     {
         let discovery_topic=self.get_discovery_topic(discovery_prefix, object_id);
-        HASMQTTClient::spawn_publish(client.clone(),discovery_topic, QoS::AtLeastOnce, true, self.to_json());
+        
+        //DON'T do this asynchronously in a separate process. Instead, await (as below). Need to wait for this to complete to connect components!
+        //HASMQTTClient::spawn_publish(client.clone(),discovery_topic, QoS::AtLeastOnce, true, self.to_json());
+
+         match client.publish(discovery_topic,QoS::AtLeastOnce,true,self.to_json()).await
+        {
+            Ok(_)=>(),
+            Err(e)=>{
+                eprintln!("Publish error: {:?}",e);
+            }
+        }
     }
 
     fn to_json(&self)->String
@@ -82,9 +92,33 @@ impl HomeAssistantDeviceConfiguration
         serde_json::to_string(self).expect("Should serialize.")
     }
 
-    pub fn get_component(&self, key:&str)->Option<&HomeAssistantDeviceComponent>
+    pub async fn connect_components(&self, has_client: &HASMQTTClient)->EventHandlers
     {
-        self.cmps.get(key)
+        let mut device_handlers=EventHandlers::new();
+
+        for (_key,component) in &self.cmps
+        {
+            match component.connect(has_client).await
+            {
+                Ok(component_handlers)=>{
+                    match component_handlers
+                    {
+                        Some(component_handlers)=>{
+                            for (key, val) in component_handlers
+                            {
+                                device_handlers.insert(key,val);
+                            }
+                        },
+                        None=>()
+                    }
+                },
+                Err(e)=>{
+                    eprintln!("Error connecting component. {:?}",e);
+                }
+            }
+        }
+
+        device_handlers
     }
 }
 
@@ -93,27 +127,32 @@ mod tests {
 
     use std::collections::HashMap;
 
+    use crate::platform::switch::SwitchState;
+
     use super::*;
 
     fn check_serialization(device_config: &HomeAssistantDeviceConfiguration) {
         println!("Serialization test:");
         let serialized = device_config.to_json();
         println!("   {}", serialized);
-        let deserialized: HomeAssistantDeviceConfiguration = serde_json::from_str(&serialized).expect("Should deserialize.");
-        println!("   {:?}", deserialized);
-
-        //The results won't be equal because they're untagged.
-        assert_ne!(*device_config,deserialized)        
     }
 
     #[test]
     fn serialization() {
 
+        let state_change = |new_state:SwitchState|->SwitchState{
+            println!("Got state change: {:?}", new_state);
+            new_state
+        };
+
         let mut cmps:HashMap<String,HomeAssistantDeviceComponent>=HashMap::new();
         cmps.insert(
             "test_component_1".to_string(),
             HomeAssistantDeviceComponent::new_switch(
-                "test_component_unique_id")
+                "test_component_unique_id",
+                state_change,
+                SwitchState::On
+            )
         );
 
         check_serialization(

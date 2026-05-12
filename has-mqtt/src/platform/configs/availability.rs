@@ -24,13 +24,14 @@ impl Availability{
         }
     }
 
-    pub fn set_availability(&self,client:AsyncClient,is_available:bool)->(){
+    pub fn set_availability(&self,has_client:&HASMQTTClient,is_available:bool)->(){
         let payload = match is_available
         {
             true=>PAYLOAD_AVAILABLE,
             false=>PAYLOAD_NOT_AVAILABLE
         };
         println!("Setting availability {} to {}",self.topic,payload);
-        HASMQTTClient::spawn_publish(client, self.topic.clone(), rumqttc::QoS::AtLeastOnce, false, payload);
+        
+        has_client.spawn_publish(self.topic.clone(), rumqttc::QoS::AtLeastOnce, false, payload);
     }
 }

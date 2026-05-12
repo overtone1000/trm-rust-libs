@@ -483,6 +483,7 @@ dependencies = [
 name = "has-mqtt"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "rumqttc",
  "serde",
  "serde_json",

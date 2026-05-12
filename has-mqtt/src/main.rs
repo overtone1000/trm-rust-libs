@@ -1,7 +1,7 @@
 
 use std::collections::HashMap;
 
-use has_mqtt::{component::HomeAssistantDeviceComponent, device::HomeAssistantDeviceConfiguration, mqtt_client::{DEFAULT_DISCOVERY_PREFIX, HASMQTTClient}, platform::{self, Platform as _}};
+use has_mqtt::{component::HomeAssistantDeviceComponent, device::{self, HomeAssistantDeviceConfiguration}, mqtt_client::{DEFAULT_DISCOVERY_PREFIX, HASMQTTClient}, platform::{self, Platform as _, switch::SwitchState}};
 
 //This doesn't seem to work. Have to poll event loop.
 //pub async fn publish_discovery_async(mqtt:&MQTTClient, client:&AsyncClient)->Result<(),ClientError>
@@ -21,23 +21,37 @@ const TEST_URL:&str="10.10.10.10";
 const TEST_PORT:u16=1883;
 const TEST_OBJECT_ID:&str="test_object_id";
 
-fn get_test_client() ->HASMQTTClient 
+async fn get_test_client(device_configuration:HomeAssistantDeviceConfiguration) ->HASMQTTClient 
 {
-    HASMQTTClient::new(
+    match HASMQTTClient::start(
         TEST_CLIENT_ID,
         TEST_URL,
         TEST_PORT,
-        DEFAULT_DISCOVERY_PREFIX
-    )
+        DEFAULT_DISCOVERY_PREFIX,
+        TEST_OBJECT_ID,
+        device_configuration
+    ).await
+    {
+        Ok(mqtt_client)=>mqtt_client,
+        Err(e)=>{panic!("{:?}",e)}
+    }
 }
 
 async fn test_publish_device() {
-    let mqtt_client:HASMQTTClient = get_test_client();
-    let (client,mut event_loop)=mqtt_client.initialize().await.expect("Couldn't initialize mqtt client.");
+    
+
+    let state_change = |new_state:SwitchState|->SwitchState{
+        println!("Got state change: {:?}", new_state);
+        new_state
+    };
 
     let mut cmps:HashMap<String,HomeAssistantDeviceComponent>=HashMap::new();
 
-    let test_switch = HomeAssistantDeviceComponent::Switch(platform::switch::Switch::new(TEST_COMPONENT_UNIQUE_ID.to_string()));
+    let test_switch = HomeAssistantDeviceComponent::Switch(
+            platform::switch::Switch::new(TEST_COMPONENT_UNIQUE_ID.to_string(),
+            state_change
+        )
+    );
 
     cmps.insert(
         TEST_COMPONENT_1.to_string(),
@@ -52,39 +66,12 @@ async fn test_publish_device() {
         cmps
     );
 
-    println!("Publishing discovery.");
-    config.publish_discovery(&client, DEFAULT_DISCOVERY_PREFIX.to_string(), TEST_OBJECT_ID);
-
-    println!("Connecting components.");
-    match config.get_component(TEST_COMPONENT_1)
-    {
-        Some(comp)=>{
-            match comp.connect(&client).await
-            {
-                Ok(_)=>(),
-                Err(e)=>{eprintln!("{:?}",e);}
-            }
-        }
-        None=>{eprintln!("Couldn't get component.");}
-    }
-
-    //Result of command that needs to be subscribed and acted upon
-    //Received = Incoming(Publish(Topic = test_component_unique_id/set, Qos = AtMostOnce, Retain = false, Pkid = 0, Payload Size = 2))
-
-    println!("Starting loop.");
-    //Must do it this way. Can't publish separately for some reason.
-    loop {
-        let notification = event_loop.poll().await.unwrap();
-        println!("Received = {:?}", notification);
-    }
+    let mqtt_client:HASMQTTClient = get_test_client(config).await;
+    mqtt_client.run().await.expect("Shouldn't ever finish.");
+    
 }
 
-#[tokio::main]
-
 async fn test_clear_device() {
-    let mqtt_client:HASMQTTClient = get_test_client();
-    let (client,mut event_loop)=mqtt_client.initialize().await.expect("Couldn't initialize mqtt client.");
-    
     let mut cmps:HashMap<String,HomeAssistantDeviceComponent>=HashMap::new();
     
     cmps.insert(
@@ -100,17 +87,14 @@ async fn test_clear_device() {
         cmps
     );
 
-    config.publish_discovery(&client, DEFAULT_DISCOVERY_PREFIX.to_string(), TEST_OBJECT_ID);
-    
-    //Must do it this way. Can't publish separately for some reason.
-    loop {
-        let notification = event_loop.poll().await.unwrap();
-        println!("Received = {:?}", notification);
-    }
+    println!("Creating client.");
+    let mqtt_client:HASMQTTClient = get_test_client(config).await;
+    println!("Running client.");
+    mqtt_client.run().await.expect("Shouldn't ever finish.");
 }
 
 #[tokio::main]
 async fn main(){
-    //test_clear_device();
+    //test_clear_device().await;
     test_publish_device().await
 }

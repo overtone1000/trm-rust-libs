@@ -1,10 +1,12 @@
-use rumqttc::{AsyncClient, ClientError};
+use std::collections::HashMap;
+
+use rumqttc::{AsyncClient, ClientError, Event};
 use serde::{Deserialize, Serialize};
 
-use crate::platform::{empty::Empty, switch::Switch};
+use crate::{mqtt_client::{EventHandlers, HASMQTTClient}, platform::{empty::Empty, switch::{Switch, SwitchState}}};
 
 
-#[derive(Serialize,Deserialize,Debug,PartialEq)]
+#[derive(Serialize)]
 #[serde(untagged)]
 pub enum HomeAssistantDeviceComponent
 {
@@ -15,25 +17,30 @@ pub enum HomeAssistantDeviceComponent
 impl HomeAssistantDeviceComponent
 {
     pub fn new_switch(
-        unique_id:&str
+        unique_id:&str,
+        handle_state_change:fn(SwitchState)->SwitchState,
+        initial_state:SwitchState
     )->HomeAssistantDeviceComponent
     {
         HomeAssistantDeviceComponent::Switch(
             Switch::new(
-                unique_id.to_string()
+                unique_id.to_string(),
+                handle_state_change
             )
         )
     }
 
-    pub async fn connect(&self, client:&AsyncClient)->Result<(),ClientError>
+    pub async fn connect(&self, has_client:&HASMQTTClient)->Result<Option<EventHandlers>,ClientError>
     {
         match self
         {
-            HomeAssistantDeviceComponent::Empty(_) => Ok(()), //Empty doesn't need to connect
+            HomeAssistantDeviceComponent::Empty(_) => Ok(None), //Empty doesn't need to connect
             HomeAssistantDeviceComponent::Switch(switch) => {
-                println!("Connecting switch.");
-                switch.availability().set_availability(client.clone(), true);
-                client.subscribe(switch.get_command_topic(), rumqttc::QoS::AtLeastOnce).await
+                match switch.connect(has_client).await
+                {
+                    Ok(handlers)=>Ok(Some(handlers)),
+                    Err(e)=>{Err(e)}
+                }
             },
         }
     }

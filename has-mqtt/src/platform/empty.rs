@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 
 
-#[derive(Serialize,Deserialize,Debug,PartialEq)]
+#[derive(Serialize)]
 pub struct Empty
 {
     p:String, //platform, mandatory, for example "switch" https://www.home-assistant.io/integrations/switch.mqtt/
