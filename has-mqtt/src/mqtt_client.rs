@@ -40,18 +40,11 @@ impl HASMQTTClient
         device_configuration:HomeAssistantDeviceConfiguration
     )->Result<HASMQTTClient,Box<dyn std::error::Error + Send + Sync>>
     {
-        let (client, eventloop)=match Self::initialize(
+        let (client, eventloop)=Self::initialize(
             client_id,
             server_url,
             server_port
-        ).await
-        {
-            Ok(result)=>result,
-            Err(e)=>{
-                eprintln!("Couldn't initialize mqtt");
-                return Err(e);
-            }
-        };
+        ).await;
 
         Ok(
             HASMQTTClient {
@@ -87,14 +80,14 @@ impl HASMQTTClient
         client_id:&str,
         server_url:&str,
         server_port:u16
-    )->Result<(AsyncClient,EventLoop),Box<dyn std::error::Error + Send + Sync>>
+    )->(AsyncClient,EventLoop)
     {
         let mut mqttoptions = MqttOptions::new(client_id, server_url,server_port);
         mqttoptions.set_keep_alive(Duration::from_secs(5));
 
         let (client, eventloop) = AsyncClient::new(mqttoptions, 10);
 
-        Ok((client,eventloop))
+        (client,eventloop)
     }
 
     async fn handle_connection(&self)->HashMap<String,Rc<dyn EventHandler>>
