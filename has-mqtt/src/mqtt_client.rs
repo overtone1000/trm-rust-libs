@@ -97,7 +97,7 @@ impl HASMQTTClient
         Ok((client,eventloop))
     }
 
-    pub async fn run(mut self)->Result<(),Box<dyn std::error::Error + Send + Sync>>
+    async fn handle_connection(&self)->HashMap<String,Rc<dyn EventHandler>>
     {
         self.device_configuration.publish_discovery(
             &self.client, 
@@ -105,8 +105,12 @@ impl HASMQTTClient
             &self.object_id,
         ).await;
 
-        let handlers=self.device_configuration.connect_components(&self).await;
+        self.device_configuration.connect_components(&self).await
+    }
 
+    pub async fn run(mut self)->Result<(),Box<dyn std::error::Error + Send + Sync>>
+    {
+        let mut handlers:Option<HashMap<String,Rc<dyn EventHandler>>>=None;
         loop {
             let notification = self.eventloop.poll().await.unwrap();
 
@@ -116,15 +120,35 @@ impl HASMQTTClient
                     match packet
                     {
                         rumqttc::Packet::Publish(publish) => {
-                            match handlers.get(&publish.topic)
+                            match &handlers
                             {
-                                Some(handler) => {
-                                    handler.handle(publish.payload,&self);
+                                Some(handlers)=>{
+                                    match handlers.get(&publish.topic)
+                                    {
+                                        Some(handler) => {
+                                            handler.handle(publish.payload,&self);
+                                        },
+                                        None => (),
+                                    }
                                 },
-                                None => (),
+                                None=>{
+                                    eprintln!("No handlers.");
+                                }
                             }
                         },
-                        _=>()
+                        rumqttc::Packet::ConnAck(conn_ack)=>
+                        {
+                            if conn_ack.code==rumqttc::ConnectReturnCode::Success
+                            {
+                                handlers=Some(self.handle_connection().await);
+                            }
+                            else {
+                                eprintln!("Failed to connect. {:?}", conn_ack);
+                            }
+                        }
+                        unhandled=>{
+                            println!("{:?}",unhandled)
+                        }
                     }
                 },
                 Event::Outgoing(_outgoing) => (),
