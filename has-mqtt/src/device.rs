@@ -150,6 +150,7 @@ mod tests {
             "test_component_1".to_string(),
             HomeAssistantDeviceComponent::new_switch(
                 "test_component_unique_id",
+                "Test Switch",
                 Box::new(state_change)
             )
         );

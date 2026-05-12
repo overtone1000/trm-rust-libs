@@ -23,7 +23,7 @@ const TEST_OBJECT_ID:&str="test_object_id";
 
 async fn get_test_client(device_configuration:HomeAssistantDeviceConfiguration) ->HASMQTTClient 
 {
-    match HASMQTTClient::start(
+    HASMQTTClient::start(
         TEST_CLIENT_ID,
         TEST_URL,
         TEST_PORT,
@@ -31,10 +31,6 @@ async fn get_test_client(device_configuration:HomeAssistantDeviceConfiguration) 
         TEST_OBJECT_ID,
         device_configuration
     ).await
-    {
-        Ok(mqtt_client)=>mqtt_client,
-        Err(e)=>{panic!("{:?}",e)}
-    }
 }
 
 async fn test_publish_device() {
@@ -49,6 +45,7 @@ async fn test_publish_device() {
 
     let test_switch = HomeAssistantDeviceComponent::Switch(
             platform::switch::Switch::new(TEST_COMPONENT_UNIQUE_ID.to_string(),
+            "Test Switch".to_string(),
             Box::new(state_change)
         )
     );

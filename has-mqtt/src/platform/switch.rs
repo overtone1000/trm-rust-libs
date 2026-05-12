@@ -65,6 +65,7 @@ pub struct Switch
     command_topic:String, //mandatory, set to none to remove device. Changing this instructs device to change its state.
     state_topic:String, //optional. Changing this informs listeners that the device state is changed.
     unique_id:String, //mandatory with device discovery, set to none to remove device
+    name:String,
     availability:Availability,
     #[serde(skip_serializing)]
     switch_handler:Rc<SwitchCommandHandler>
@@ -78,7 +79,7 @@ struct SwitchCommandHandler
 
 impl Switch
 {
-    pub fn new(unique_id:String, handle_state_change:Box<dyn Fn(SwitchState)->SwitchState>)->Switch
+    pub fn new(unique_id:String, name:String, handle_state_change:Box<dyn Fn(SwitchState)->SwitchState>)->Switch
     {
         let state_topic=unique_id.clone()+STATE_TOPIC_TAIL;
 
@@ -87,6 +88,7 @@ impl Switch
             command_topic:unique_id.clone()+COMMAND_TOPIC_TAIL,
             state_topic:state_topic.clone(),
             unique_id:unique_id.clone(),
+            name,
             availability:Availability::new(unique_id),
             switch_handler:Rc::new(SwitchCommandHandler{
                 handle_state_change,
