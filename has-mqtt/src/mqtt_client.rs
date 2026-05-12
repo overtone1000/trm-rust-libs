@@ -38,7 +38,7 @@ impl HASMQTTClient
         discovery_prefix:&str, //https://www.home-assistant.io/integrations/mqtt/
         object_id:&str,
         device_configuration:HomeAssistantDeviceConfiguration
-    )->Result<HASMQTTClient,Box<dyn std::error::Error + Send + Sync>>
+    )->HASMQTTClient
     {
         let (client, eventloop)=Self::initialize(
             client_id,
@@ -46,15 +46,13 @@ impl HASMQTTClient
             server_port
         ).await;
 
-        Ok(
-            HASMQTTClient {
-                discovery_prefix:discovery_prefix.to_string(),
-                client,
-                eventloop,
-                object_id:object_id.to_string(),
-                device_configuration
-            }
-        )
+        HASMQTTClient {
+            discovery_prefix:discovery_prefix.to_string(),
+            client,
+            eventloop,
+            object_id:object_id.to_string(),
+            device_configuration
+        }
     }
 
     pub fn get_client(&self)->&AsyncClient{&self.client}
