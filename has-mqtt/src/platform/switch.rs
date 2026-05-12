@@ -24,6 +24,39 @@ pub enum SwitchState
     Off
 }
 
+impl SwitchState
+{
+    pub fn as_bool(&self)->bool{
+        match self
+        {
+            Self::On=>true,
+            Self::Off=>false
+        }
+    }
+
+    pub fn from_bool(val:bool)->Self
+    {
+        match val
+        {
+            true=>Self::On,
+            false=>Self::Off
+        }
+    }
+}
+
+impl std::ops::Not for SwitchState
+{
+    type Output = SwitchState;
+
+    fn not(self) -> Self::Output {
+        match self
+        {
+            Self::On=>Self::Off,
+            Self::Off=>Self::On
+        }
+    }
+}
+
 #[derive(Serialize)]
 pub struct Switch
 {
@@ -39,13 +72,13 @@ pub struct Switch
 
 struct SwitchCommandHandler
 {
-    handle_state_change:fn(SwitchState)->SwitchState, //should return the resultant state
+    handle_state_change:Box<dyn Fn(SwitchState)->SwitchState>, //should return the resultant state
     state_topic:String, //needs a copy of this
 }
 
 impl Switch
 {
-    pub fn new(unique_id:String, handle_state_change:fn(SwitchState)->SwitchState)->Switch
+    pub fn new(unique_id:String, handle_state_change:Box<dyn Fn(SwitchState)->SwitchState>)->Switch
     {
         let state_topic=unique_id.clone()+STATE_TOPIC_TAIL;
 

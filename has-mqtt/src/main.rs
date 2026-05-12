@@ -49,7 +49,7 @@ async fn test_publish_device() {
 
     let test_switch = HomeAssistantDeviceComponent::Switch(
             platform::switch::Switch::new(TEST_COMPONENT_UNIQUE_ID.to_string(),
-            state_change
+            Box::new(state_change)
         )
     );
 

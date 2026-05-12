@@ -18,8 +18,7 @@ impl HomeAssistantDeviceComponent
 {
     pub fn new_switch(
         unique_id:&str,
-        handle_state_change:fn(SwitchState)->SwitchState,
-        initial_state:SwitchState
+        handle_state_change:Box<dyn Fn(SwitchState)->SwitchState>
     )->HomeAssistantDeviceComponent
     {
         HomeAssistantDeviceComponent::Switch(
