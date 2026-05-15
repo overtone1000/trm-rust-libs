@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use rumqttc::{AsyncClient, ClientError, Event};
 use serde::{Deserialize, Serialize};
 
-use crate::{mqtt_client::{EventHandlers, HASMQTTClient}, platform::{empty::Empty, switch::{Switch, SwitchState}}};
+use crate::{mqtt_client::{EventHandlers, HASMQTTClient}, platform::{Component, empty::Empty, switch::{component::Switch, state::SwitchState}, text::component::Text}};
 
 
 #[derive(Serialize)]
@@ -11,7 +11,8 @@ use crate::{mqtt_client::{EventHandlers, HASMQTTClient}, platform::{empty::Empty
 pub enum HomeAssistantDeviceComponent
 {
     Empty(Empty),
-    Switch(Switch)
+    Switch(Switch),
+    Text(Text)
 }
 
 impl HomeAssistantDeviceComponent
@@ -33,11 +34,19 @@ impl HomeAssistantDeviceComponent
 
     pub async fn connect(&self, has_client:&HASMQTTClient)->Result<Option<EventHandlers>,ClientError>
     {
+        //Probably a more elegant way to do this...
         match self
         {
             HomeAssistantDeviceComponent::Empty(_) => Ok(None), //Empty doesn't need to connect
-            HomeAssistantDeviceComponent::Switch(switch) => {
-                match switch.connect(has_client).await
+            HomeAssistantDeviceComponent::Switch(component) => {
+                match component.connect(has_client).await
+                {
+                    Ok(handlers)=>Ok(Some(handlers)),
+                    Err(e)=>{Err(e)}
+                }
+            },
+            HomeAssistantDeviceComponent::Text(component) => {
+                match component.connect(has_client).await
                 {
                     Ok(handlers)=>Ok(Some(handlers)),
                     Err(e)=>{Err(e)}

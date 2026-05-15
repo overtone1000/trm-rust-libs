@@ -127,7 +127,7 @@ mod tests {
 
     use std::collections::HashMap;
 
-    use crate::platform::switch::SwitchState;
+    use crate::platform::switch::state::SwitchState;
 
     use super::*;
 
