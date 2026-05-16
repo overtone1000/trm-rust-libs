@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use serde::Serialize;
 
-use crate::{mqtt_client::{EventHandlers, HASMQTTClient}, platform::{COMMAND_TOPIC_TAIL, CommandHandler, Component, STATE_TOPIC_TAIL, configs::availability::Availability, switch::state::SwitchState}};
+use crate::{component::HomeAssistantDeviceComponent, mqtt_client::{EventHandlers, HASMQTTClient}, platform::{COMMAND_TOPIC_TAIL, CommandHandler, Component, STATE_TOPIC_TAIL, configs::availability::Availability, switch::state::SwitchState}};
 
 //see component types, //https://www.home-assistant.io/integrations/mqtt/
 const SWITCH_COMPONENT:&str="switch";
@@ -23,22 +23,28 @@ pub struct Switch
 
 impl Switch
 {
-    pub fn new(unique_id:String, name:String, handle_state_change:Box<dyn Fn(SwitchState)->SwitchState>)->Switch
+    pub fn new(
+        unique_id:&str,
+        name:&str,
+        handle_state_change:Box<dyn Fn(SwitchState)->SwitchState>
+    )->HomeAssistantDeviceComponent
     {
-        let state_topic=unique_id.clone()+STATE_TOPIC_TAIL;
+        let state_topic=unique_id.to_string()+STATE_TOPIC_TAIL;
 
-        Switch { 
-            p:Self::get_platform(),
-            command_topic:unique_id.clone()+COMMAND_TOPIC_TAIL,
-            state_topic:state_topic.clone(),
-            unique_id:unique_id.clone(),
-            name,
-            availability:Availability::new(unique_id),
-            command_handler:Rc::new(CommandHandler{
-                handle_state_change,
-                state_topic:state_topic
-            })
-        }
+        HomeAssistantDeviceComponent::Switch(
+            Switch { 
+                p:Self::get_platform(),
+                command_topic:unique_id.to_string()+COMMAND_TOPIC_TAIL,
+                state_topic:state_topic.clone(),
+                unique_id:unique_id.to_string(),
+                name:name.to_string(),
+                availability:Availability::new(unique_id.to_string()),
+                command_handler:Rc::new(CommandHandler{
+                    handle_state_change,
+                    state_topic:state_topic
+                })
+            }
+        )
     }
 }
 

@@ -127,7 +127,7 @@ mod tests {
 
     use std::collections::HashMap;
 
-    use crate::platform::switch::state::SwitchState;
+    use crate::platform::switch::{component::Switch, state::SwitchState};
 
     use super::*;
 
@@ -148,7 +148,7 @@ mod tests {
         let mut cmps:HashMap<String,HomeAssistantDeviceComponent>=HashMap::new();
         cmps.insert(
             "test_component_1".to_string(),
-            HomeAssistantDeviceComponent::new_switch(
+            Switch::new(
                 "test_component_unique_id",
                 "Test Switch",
                 Box::new(state_change)

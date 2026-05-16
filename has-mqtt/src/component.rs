@@ -17,21 +17,6 @@ pub enum HomeAssistantDeviceComponent
 
 impl HomeAssistantDeviceComponent
 {
-    pub fn new_switch(
-        unique_id:&str,
-        name:&str,
-        handle_state_change:Box<dyn Fn(SwitchState)->SwitchState>
-    )->HomeAssistantDeviceComponent
-    {
-        HomeAssistantDeviceComponent::Switch(
-            Switch::new(
-                unique_id.to_string(),
-                name.to_string(),
-                handle_state_change
-            )
-        )
-    }
-
     pub async fn connect(&self, has_client:&HASMQTTClient)->Result<Option<EventHandlers>,ClientError>
     {
         //Probably a more elegant way to do this...

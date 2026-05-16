@@ -1,7 +1,7 @@
 
 use std::collections::HashMap;
 
-use has_mqtt::{component::HomeAssistantDeviceComponent, device::{self, HomeAssistantDeviceConfiguration}, mqtt_client::{DEFAULT_DISCOVERY_PREFIX, HASMQTTClient}, platform::{self, Component as _, switch::state::SwitchState}};
+use has_mqtt::{component::HomeAssistantDeviceComponent, device::{self, HomeAssistantDeviceConfiguration}, mqtt_client::{DEFAULT_DISCOVERY_PREFIX, HASMQTTClient}, platform::{self, Component as _, switch::{component::Switch, state::SwitchState}}};
 
 //This doesn't seem to work. Have to poll event loop.
 //pub async fn publish_discovery_async(mqtt:&MQTTClient, client:&AsyncClient)->Result<(),ClientError>
@@ -43,11 +43,10 @@ async fn test_publish_device() {
 
     let mut cmps:HashMap<String,HomeAssistantDeviceComponent>=HashMap::new();
 
-    let test_switch = HomeAssistantDeviceComponent::Switch(
-            platform::switch::component::Switch::new(TEST_COMPONENT_UNIQUE_ID.to_string(),
-            "Test Switch".to_string(),
-            Box::new(state_change)
-        )
+    let test_switch: HomeAssistantDeviceComponent = Switch::new(
+        TEST_COMPONENT_UNIQUE_ID,
+        "Test Switch",
+        Box::new(state_change)
     );
 
     cmps.insert(
