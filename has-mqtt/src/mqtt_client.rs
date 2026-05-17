@@ -57,13 +57,20 @@ impl HASMQTTClient
 
     pub fn get_client(&self)->&AsyncClient{&self.client}
 
-    pub fn spawn_publish<V,S>(&self, topic:S, qos:QoS, retain:bool, payload:V)
+    pub fn spawn_publish<V,S>(&self, topic:S, qos:QoS, retain:bool, payload:V, delay_before:Option<Duration>)
     where
     S: Into<String>+std::marker::Send+'static,
     V: Into<Vec<u8>>+std::marker::Send+'static
     {
         let client = self.client.clone();
         task::spawn(async move {
+            match delay_before
+            {
+                Some(delay)=>{
+                    std::thread::sleep(delay);
+                },
+                None=>()                
+            }
             match client.publish(topic,qos,retain,payload).await
             {
                 Ok(_)=>(),

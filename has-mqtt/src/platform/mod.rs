@@ -24,23 +24,9 @@ pub trait Component
     fn state_topic(&self)->&str;
     fn connect_handlers(&self)->EventHandlers;
     
-    async fn connect(&self, has_client:&HASMQTTClient)->Result<EventHandlers,ClientError>
+    fn subscribe_future(&self, has_client:&HASMQTTClient)-> impl std::future::Future<Output = Result<(), rumqttc::ClientError>>
     {
-        println!("Connecting {}",self.name());
-        
-        match has_client.get_client().subscribe(self.command_topic().clone(), rumqttc::QoS::AtLeastOnce).await
-        {
-            Ok(_)=>{},
-            Err(e)=>{
-                return Err(e);
-            }
-        };
-
-        //This simply does not work. Need to do it after a delay.
-        error is here
-        self.availability().set_availability(has_client, true);
-
-        Ok(self.connect_handlers())
+        has_client.get_client().subscribe(self.command_topic().clone(), rumqttc::QoS::AtLeastOnce)
     }
 }
 
@@ -64,7 +50,8 @@ impl <T:HASMQTTState> CommandHandler<T>
             self.state_topic.clone(),
             rumqttc::QoS::AtLeastOnce,
             false,
-            state.to_payload().to_string()
+            state.to_payload().to_string(),
+            None
         );
     }
 }

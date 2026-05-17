@@ -15,28 +15,22 @@ pub enum HomeAssistantDeviceComponent
     Text(Text)
 }
 
+async fn configure_component<T:Component>(component:&T, has_client:&HASMQTTClient)->Result<Option<EventHandlers>,ClientError>
+{
+    component.subscribe_future(has_client).await;
+    component.availability().set_availability(has_client, true);
+    Ok(Some(component.connect_handlers()))
+}
+
 impl HomeAssistantDeviceComponent
 {
     pub async fn connect(&self, has_client:&HASMQTTClient)->Result<Option<EventHandlers>,ClientError>
     {
-        //Probably a more elegant way to do this...
         match self
         {
             HomeAssistantDeviceComponent::Empty(_) => Ok(None), //Empty doesn't need to connect
-            HomeAssistantDeviceComponent::Switch(component) => {
-                match component.connect(has_client).await
-                {
-                    Ok(handlers)=>Ok(Some(handlers)),
-                    Err(e)=>{Err(e)}
-                }
-            },
-            HomeAssistantDeviceComponent::Text(component) => {
-                match component.connect(has_client).await
-                {
-                    Ok(handlers)=>Ok(Some(handlers)),
-                    Err(e)=>{Err(e)}
-                }
-            },
+            HomeAssistantDeviceComponent::Switch(component) => {configure_component(component,has_client).await},
+            HomeAssistantDeviceComponent::Text(component) => {configure_component(component,has_client).await},
         }
     }
 }
