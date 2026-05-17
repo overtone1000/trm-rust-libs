@@ -88,14 +88,17 @@ impl HASMQTTClient
         (client,eventloop)
     }
 
-    async fn handle_connection(&self)->HashMap<String,Rc<dyn EventHandler>>
+    async fn publish(&self)->()
     {
         self.device_configuration.publish_discovery(
             &self.client, 
             self.discovery_prefix.to_string(),
             &self.object_id,
-        ).await;
+        ).await
+    }
 
+    async fn connect_components(&self)->HashMap<String,Rc<dyn EventHandler>>
+    {
         self.device_configuration.connect_components(&self).await
     }
 
@@ -131,10 +134,24 @@ impl HASMQTTClient
                         {
                             if conn_ack.code==rumqttc::ConnectReturnCode::Success
                             {
-                                handlers=Some(self.handle_connection().await);
+                                self.publish().await;
                             }
                             else {
                                 eprintln!("Failed to connect. {:?}", conn_ack);
+                            }
+                        },
+                        rumqttc::Packet::PubAck(pub_ack)=>
+                        {
+                            match pub_ack.pkid
+                            {
+                                //After initial publish, connect components
+                                1=>{
+                                    println!("Connecting components.");
+                                    handlers=Some(self.connect_components().await);
+                                }
+                                _=>{
+                                    println!("{:?}",pub_ack);
+                                }
                             }
                         }
                         unhandled=>{

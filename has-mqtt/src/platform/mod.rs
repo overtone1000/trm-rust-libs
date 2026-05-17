@@ -27,7 +27,6 @@ pub trait Component
     async fn connect(&self, has_client:&HASMQTTClient)->Result<EventHandlers,ClientError>
     {
         println!("Connecting {}",self.name());
-        self.availability().set_availability(has_client, true);
         
         match has_client.get_client().subscribe(self.command_topic().clone(), rumqttc::QoS::AtLeastOnce).await
         {
@@ -36,6 +35,10 @@ pub trait Component
                 return Err(e);
             }
         };
+
+        //This simply does not work. Need to do it after a delay.
+        error is here
+        self.availability().set_availability(has_client, true);
 
         Ok(self.connect_handlers())
     }
