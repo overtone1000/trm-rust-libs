@@ -49,7 +49,7 @@ pub trait HASMQTTState
 
 struct CommandHandler<T:HASMQTTState>
 {
-    handle_state_change:Box<dyn Fn(T)->T>, //should return the resultant state for updating the state
+    handle_state_change:Box<dyn Fn(T)->Option<T>>, //should return the resultant state for updating the state
     state_topic:String, //needs a copy of this
 }
 
@@ -71,8 +71,11 @@ impl <T:HASMQTTState> EventHandler for CommandHandler<T>
     fn handle(&self, payload:Bytes, has_client:&HASMQTTClient) {
         match T::from_payload(payload){
             Ok(input_state)=>{
-                let output_state = (self.handle_state_change)(input_state);
-                self.set_state(has_client,output_state);      
+                match (self.handle_state_change)(input_state)
+                {
+                    Some(result)=>{self.set_state(has_client,result);}
+                    None=>()
+                };
             },
             Err(e)=>{
                 eprintln!("{:?}",e);

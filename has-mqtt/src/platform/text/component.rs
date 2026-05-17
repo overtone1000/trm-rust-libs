@@ -26,7 +26,7 @@ impl Text
     pub fn new(
         unique_id:&str,
         name:&str,
-        handle_state_change:Box<dyn Fn(String)->String>
+        handle_state_change:Box<dyn Fn(String)->Option<String>>
     )->HomeAssistantDeviceComponent
     {
         let state_topic=unique_id.to_string()+STATE_TOPIC_TAIL;

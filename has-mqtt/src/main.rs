@@ -36,9 +36,9 @@ async fn get_test_client(device_configuration:HomeAssistantDeviceConfiguration) 
 async fn test_publish_device() {
     
 
-    let state_change = |new_state:SwitchState|->SwitchState{
+    let state_change = |new_state:SwitchState|->Option<SwitchState>{
         println!("Got state change: {:?}", new_state);
-        new_state
+        Some(new_state)
     };
 
     let mut cmps:HashMap<String,HomeAssistantDeviceComponent>=HashMap::new();
