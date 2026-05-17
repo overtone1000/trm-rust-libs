@@ -24,11 +24,16 @@ pub struct Switch
 impl Switch
 {
     pub fn new(
-        unique_id:&str,
-        name:&str,
+        device_id:&str,
+        device_name:&str,
+        component_id_tag:&str,
+        component_name_tag:&str,
         handle_state_change:Box<dyn Fn(SwitchState)->Option<SwitchState>>
     )->HomeAssistantDeviceComponent
     {
+        let unique_id=device_id.to_string()+"_"+component_id_tag;
+        let name = device_name.to_string()+" "+component_name_tag;
+
         let state_topic=unique_id.to_string()+STATE_TOPIC_TAIL;
 
         HomeAssistantDeviceComponent::Switch(

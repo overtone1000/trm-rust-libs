@@ -149,6 +149,8 @@ mod tests {
         cmps.insert(
             "test_component_1".to_string(),
             Switch::new(
+                "device_id",
+                "Device Name",
                 "test_component_unique_id",
                 "Test Switch",
                 Box::new(state_change)

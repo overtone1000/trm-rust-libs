@@ -44,6 +44,8 @@ async fn test_publish_device() {
     let mut cmps:HashMap<String,HomeAssistantDeviceComponent>=HashMap::new();
 
     let test_switch: HomeAssistantDeviceComponent = Switch::new(
+        "device_id",
+                "Device Name",
         TEST_COMPONENT_UNIQUE_ID,
         "Test Switch",
         Box::new(state_change)
