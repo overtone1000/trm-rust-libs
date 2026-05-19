@@ -35,6 +35,6 @@ impl Availability{
         println!("Setting availability {} to {}",self.topic,payload);
         
         //Use a delay to wait for availability topics to be ready on server
-        has_client.spawn_publish(self.topic.clone(), rumqttc::QoS::AtLeastOnce, false, payload, Some(std::time::Duration::from_secs(3)));
+        has_client.spawn_publish(self.topic.clone(), rumqttc::QoS::AtLeastOnce, true, payload, Some(std::time::Duration::from_secs(3)));
     }
 }
