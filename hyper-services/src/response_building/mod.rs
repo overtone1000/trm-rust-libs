@@ -1,4 +1,4 @@
-use std::{fs::FileType, future::Future, pin::Pin};
+use std::{collections::HashMap, fs::FileType, future::Future, pin::Pin};
 
 use futures_util::{future::BoxFuture, TryStreamExt};
 use http_body_util::{combinators::BoxBody, BodyExt, Full};
@@ -68,7 +68,7 @@ pub fn server_side_failure() -> Response<HandlerBody> {
 }
 
 const SUFFIXES_TO_TRY: [&str; 3] = ["", ".html", "/index.html"];
-pub async fn send_file(file_system_root_directory: &str, request_path: &str) -> HandlerResult {
+pub async fn send_file(file_system_root_directory: &str, request_path: &str, additional_headers:Option<hyper::HeaderMap>) -> HandlerResult {
     if request_path.contains("..") {
         //Reject attempts to access parent directories
         return Ok(bad_request());
@@ -114,11 +114,28 @@ pub async fn send_file(file_system_root_directory: &str, request_path: &str) -> 
                             let boxed_body = stream_to_boxed_body(reader_stream);
 
                             // Send response
-                            let response = Response::builder()
+                            let mut response_builder = Response::builder()
                                 .status(hyper::StatusCode::OK)
-                                .header(hyper::header::CONTENT_TYPE, content_type)
-                                .body(boxed_body)
-                                .unwrap();
+                                .header(hyper::header::CONTENT_TYPE, content_type);                                
+
+                            match additional_headers
+                            {
+                                Some(additional_headers)=>{
+                                    for (name, value) in additional_headers
+                                    {
+                                        match name
+                                        {
+                                            Some(name)=>{
+                                                response_builder=response_builder.header(name,value);
+                                            },
+                                            None=>()
+                                        };
+                                    }
+                                },
+                                None=>()
+                            }
+                            
+                            let response=response_builder.body(boxed_body).unwrap();
                             return Ok(response);
                         }
                     }
