@@ -160,7 +160,9 @@ impl HASMQTTClient
                                     println!("{:?}",pub_ack);
                                 }
                             }
-                        }
+                        },
+                        rumqttc::Packet::PingReq=>(),
+                        rumqttc::Packet::PingResp=>(),
                         unhandled=>{
                             println!("Unhandled packet: {:?}",unhandled)
                         }
