@@ -162,7 +162,7 @@ impl HASMQTTClient
                             }
                         }
                         unhandled=>{
-                            println!("{:?}",unhandled)
+                            println!("Unhandled packet: {:?}",unhandled)
                         }
                     }
                 },
