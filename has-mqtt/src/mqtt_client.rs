@@ -161,6 +161,7 @@ impl HASMQTTClient
                                 }
                             }
                         },
+                        rumqttc::Packet::SubAck(_)=>(),   
                         rumqttc::Packet::PingReq=>(),
                         rumqttc::Packet::PingResp=>(),
                         unhandled=>{
