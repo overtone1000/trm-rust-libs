@@ -157,7 +157,7 @@ impl HASMQTTClient
                                     handlers=Some(self.connect_components().await);
                                 }
                                 _=>{
-                                    println!("{:?}",pub_ack);
+                                    //println!("{:?}",pub_ack)
                                 }
                             }
                         },

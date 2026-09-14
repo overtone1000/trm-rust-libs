@@ -68,7 +68,7 @@ impl <T:HASMQTTState> EventHandler for CommandHandler<T>
                 };
             },
             Err(e)=>{
-                eprintln!("{:?}",e);
+                eprintln!("Error: {:?}",e);
             }
         };
     }

@@ -46,12 +46,12 @@ fn basic_authentication_decode(encoded: &str) -> Option<Auth> {
                 }
             }
             Err(e) => {
-                eprintln!("{:?}", e);
+                eprintln!("Error: {:?}", e);
                 None
             }
         },
         Err(e) => {
-            eprintln!("{:?}", e);
+            eprintln!("Error: {:?}", e);
             None
         }
     }
