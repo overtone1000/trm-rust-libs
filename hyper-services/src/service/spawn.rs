@@ -8,8 +8,9 @@ use hyper::{
 };
 use hyper_util::rt::{TokioIo, TokioTimer};
 
+use rustls::ServerConfig;
 use tokio::net::TcpListener;
-use tokio_rustls::{TlsAcceptor, rustls::ServerConfig};
+use tokio_rustls::TlsAcceptor;
 
 use crate::service::certificates::TlsCerts;
 
@@ -69,7 +70,10 @@ where
                         
             let server_config = match ServerConfig::builder()
                 .with_no_client_auth()
-                .with_single_cert(certs.certs, certs.keys)
+                .with_single_cert(
+                    certs.certs, 
+                    certs.keys
+                )
                 .map_err(|e|  std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
                 {
                     Ok(config)=>config,

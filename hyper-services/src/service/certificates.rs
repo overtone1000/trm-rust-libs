@@ -1,9 +1,9 @@
-use rustls::pki_types::{CertificateDer, PrivateKeyDer};
+use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 
 pub struct TlsCerts
 {
     pub certs:Vec<CertificateDer<'static>>,
-    pub keys:PrivateKeyDer<'static>
+    pub keys:PrivateKeyDer<'static>,
 }
 
 pub fn generate_simple_certificates<S:Into<Vec<String>>>(hostnames:S)->Result<TlsCerts,Box<rcgen::Error>>
@@ -12,9 +12,9 @@ pub fn generate_simple_certificates<S:Into<Vec<String>>>(hostnames:S)->Result<Tl
     {
         Ok(keypair)=>{
             
-            let certs =  vec![rustls::pki_types::CertificateDer::from(keypair.cert)];
-            let keys = rustls::pki_types::PrivateKeyDer::from(keypair.signing_key);
-
+            let certs =  vec![CertificateDer::from(keypair.cert)];
+            let keys:PrivateKeyDer<'_> = PrivatePkcs8KeyDer::from(keypair.signing_key.serialize_der()).into();
+            
             Ok(TlsCerts{
                 certs,
                 keys
