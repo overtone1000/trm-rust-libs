@@ -67,7 +67,8 @@ impl HASMQTTClient
             match delay_before
             {
                 Some(delay)=>{
-                    std::thread::sleep(delay);
+                    //std::thread::sleep(delay); //Don't use this, causes whole thread to sleep!
+                    tokio::time::sleep(delay).await;
                 },
                 None=>()                
             }
@@ -113,63 +114,69 @@ impl HASMQTTClient
     {
         let mut handlers:Option<HashMap<String,Rc<dyn EventHandler>>>=None;
         loop {
-            let notification = self.eventloop.poll().await.unwrap();
-
-            match notification
+            match self.eventloop.poll().await
             {
-                Event::Incoming(packet) => {
-                    match packet
+                Ok(notification)=>{
+                    match notification
                     {
-                        rumqttc::Packet::Publish(publish) => {
-                            match &handlers
+                        Event::Incoming(packet) => {
+                            match packet
                             {
-                                Some(handlers)=>{
-                                    match handlers.get(&publish.topic)
+                                rumqttc::Packet::Publish(publish) => {
+                                    match &handlers
                                     {
-                                        Some(handler) => {
-                                            handler.handle(publish.payload,&self);
+                                        Some(handlers)=>{
+                                            match handlers.get(&publish.topic)
+                                            {
+                                                Some(handler) => {
+                                                    handler.handle(publish.payload,&self);
+                                                },
+                                                None => (),
+                                            }
                                         },
-                                        None => (),
+                                        None=>{
+                                            eprintln!("No handlers.");
+                                        }
                                     }
                                 },
-                                None=>{
-                                    eprintln!("No handlers.");
+                                rumqttc::Packet::ConnAck(conn_ack)=>
+                                {
+                                    if conn_ack.code==rumqttc::ConnectReturnCode::Success
+                                    {
+                                        self.publish().await;
+                                    }
+                                    else {
+                                        eprintln!("Failed to connect. {:?}", conn_ack);
+                                    }
+                                },
+                                rumqttc::Packet::PubAck(pub_ack)=>
+                                {
+                                    match pub_ack.pkid
+                                    {
+                                        //After initial publish, connect components
+                                        1=>{
+                                            println!("Connecting components.");
+                                            handlers=Some(self.connect_components().await);
+                                        }
+                                        _=>{
+                                            //println!("{:?}",pub_ack)
+                                        }
+                                    }
+                                },
+                                rumqttc::Packet::SubAck(_)=>(),   
+                                rumqttc::Packet::PingReq=>(),
+                                rumqttc::Packet::PingResp=>(),
+                                unhandled=>{
+                                    println!("Unhandled packet: {:?}",unhandled)
                                 }
                             }
                         },
-                        rumqttc::Packet::ConnAck(conn_ack)=>
-                        {
-                            if conn_ack.code==rumqttc::ConnectReturnCode::Success
-                            {
-                                self.publish().await;
-                            }
-                            else {
-                                eprintln!("Failed to connect. {:?}", conn_ack);
-                            }
-                        },
-                        rumqttc::Packet::PubAck(pub_ack)=>
-                        {
-                            match pub_ack.pkid
-                            {
-                                //After initial publish, connect components
-                                1=>{
-                                    println!("Connecting components.");
-                                    handlers=Some(self.connect_components().await);
-                                }
-                                _=>{
-                                    //println!("{:?}",pub_ack)
-                                }
-                            }
-                        },
-                        rumqttc::Packet::SubAck(_)=>(),   
-                        rumqttc::Packet::PingReq=>(),
-                        rumqttc::Packet::PingResp=>(),
-                        unhandled=>{
-                            println!("Unhandled packet: {:?}",unhandled)
-                        }
+                        Event::Outgoing(_outgoing) => (),
                     }
                 },
-                Event::Outgoing(_outgoing) => (),
+                Err(e)=>{
+                    eprintln!("{:?}",e)
+                }
             }
         }
     }
