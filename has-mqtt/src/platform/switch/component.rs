@@ -1,4 +1,5 @@
-use std::rc::Rc;
+
+use std::sync::Arc;
 
 use serde::Serialize;
 
@@ -18,7 +19,7 @@ pub struct Switch
     name:String,
     availability:Availability,
     #[serde(skip_serializing)]
-    command_handler:Rc<CommandHandler<SwitchState>>
+    command_handler:Arc<CommandHandler<SwitchState>>
 }
 
 impl Switch
@@ -44,7 +45,7 @@ impl Switch
                 unique_id:unique_id.to_string(),
                 name:name.to_string(),
                 availability:Availability::new(unique_id.to_string()),
-                command_handler:Rc::new(CommandHandler{
+                command_handler:Arc::new(CommandHandler{
                     handle_state_change,
                     state_topic:state_topic
                 })

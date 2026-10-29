@@ -4,6 +4,7 @@ use rumqttc::{AsyncClient, ClientError, Event, EventLoop, MqttOptions, QoS};
 use tokio::{task, time};
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::Duration;
 use std::error::Error;
 
@@ -17,7 +18,7 @@ pub trait EventHandler
     fn handle(&self, payload:Bytes, has_client:&HASMQTTClient);
 }
 
-pub type EventHandlers = HashMap<String,Rc<dyn EventHandler>>;
+pub type EventHandlers = HashMap<String,Arc<dyn EventHandler>>;
 
 //#[derive(Clone)]
 pub struct HASMQTTClient
@@ -105,14 +106,14 @@ impl HASMQTTClient
         ).await
     }
 
-    async fn connect_components(&self)->HashMap<String,Rc<dyn EventHandler>>
+    async fn connect_components(&self)->HashMap<String,Arc<dyn EventHandler>>
     {
         self.device_configuration.connect_components(&self).await
     }
 
     pub async fn run(mut self)->Result<(),Box<dyn std::error::Error + Send + Sync>>
     {
-        let mut handlers:Option<HashMap<String,Rc<dyn EventHandler>>>=None;
+        let mut handlers:Option<HashMap<String,Arc<dyn EventHandler>>>=None;
         loop {
             match self.eventloop.poll().await
             {
