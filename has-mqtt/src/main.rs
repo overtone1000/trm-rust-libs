@@ -1,5 +1,5 @@
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use has_mqtt::{component::HomeAssistantDeviceComponent, device::{self, HomeAssistantDeviceConfiguration}, mqtt_client::{DEFAULT_DISCOVERY_PREFIX, HASMQTTClient}, platform::{self, Component as _, switch::{component::Switch, state::SwitchState}}};
 
@@ -48,7 +48,7 @@ async fn test_publish_device() {
                 "Device Name",
         TEST_COMPONENT_UNIQUE_ID,
         "Test Switch",
-        Box::new(state_change)
+        Arc::new(state_change)
     );
 
     cmps.insert(

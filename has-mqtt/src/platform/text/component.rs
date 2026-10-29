@@ -28,7 +28,7 @@ impl Text
         device_name:&str,
         component_id_tag:&str,
         component_name_tag:&str,
-        handle_state_change:Box<dyn Fn(String)->Option<String>>
+        handle_state_change:Arc<dyn Fn(String)->Option<String>>
     )->HomeAssistantDeviceComponent
     {
         let unique_id=device_id.to_string()+"_"+component_id_tag;

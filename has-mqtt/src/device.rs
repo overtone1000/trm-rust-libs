@@ -125,7 +125,7 @@ impl HomeAssistantDeviceConfiguration
 #[cfg(test)]
 mod tests {
 
-    use std::collections::HashMap;
+    use std::{collections::HashMap, sync::Arc};
 
     use crate::platform::switch::{component::Switch, state::SwitchState};
 
@@ -153,7 +153,7 @@ mod tests {
                 "Device Name",
                 "test_component_unique_id",
                 "Test Switch",
-                Box::new(state_change)
+                Arc::new(state_change)
             )
         );
 

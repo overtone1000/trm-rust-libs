@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use bytes::Bytes;
 use rumqttc::ClientError;
 
@@ -38,7 +40,7 @@ pub trait HASMQTTState
 
 struct CommandHandler<T:HASMQTTState>
 {
-    handle_state_change:Box<dyn Fn(T)->Option<T>>, //should return the resultant state for updating the state
+    handle_state_change:Arc<dyn Fn(T)->Option<T>>, //should return the resultant state for updating the state
     state_topic:String, //needs a copy of this
 }
 
