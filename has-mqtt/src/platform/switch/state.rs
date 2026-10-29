@@ -6,7 +6,7 @@ const COMMAND_OFF:&str="OFF"; //This is the default for command topic.
 const STATE_ON:&str="ON"; //This is the default for state topic.
 const STATE_OFF:&str="OFF"; //This is the default for state topic.
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum SwitchState
 {
     On,

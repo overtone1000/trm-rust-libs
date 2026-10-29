@@ -38,13 +38,13 @@ pub trait HASMQTTState
     fn from_payload(payload:Bytes)->Result<Self,Box<dyn std::error::Error>> where Self: Sized;
 }
 
-struct CommandHandler<T:HASMQTTState>
+struct CommandHandler<T:HASMQTTState+Send+Sync>
 {
-    handle_state_change:Arc<dyn Fn(T)->Option<T>>, //should return the resultant state for updating the state
+    handle_state_change:Arc<dyn Fn(T)->Option<T>+Send+Sync>, //should return the resultant state for updating the state
     state_topic:String, //needs a copy of this
 }
 
-impl <T:HASMQTTState> CommandHandler<T>
+impl <T:HASMQTTState+Send+Sync> CommandHandler<T>
 {
     fn set_state(&self, has_client:&HASMQTTClient, state:T)
     {
@@ -58,7 +58,7 @@ impl <T:HASMQTTState> CommandHandler<T>
     }
 }
 
-impl <T:HASMQTTState> EventHandler for CommandHandler<T>
+impl <T:HASMQTTState+Send+Sync> EventHandler for CommandHandler<T>
 {
     fn handle(&self, payload:Bytes, has_client:&HASMQTTClient) {
         match T::from_payload(payload){

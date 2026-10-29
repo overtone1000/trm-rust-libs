@@ -29,7 +29,7 @@ impl Switch
         device_name:&str,
         component_id_tag:&str,
         component_name_tag:&str,
-        handle_state_change:Arc<dyn Fn(SwitchState)->Option<SwitchState>>
+        handle_state_change:Arc<dyn Fn(SwitchState)->Option<SwitchState>+Send+Sync>
     )->HomeAssistantDeviceComponent
     {
         let unique_id=device_id.to_string()+"_"+component_id_tag;

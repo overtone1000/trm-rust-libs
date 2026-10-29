@@ -28,7 +28,7 @@ impl Text
         device_name:&str,
         component_id_tag:&str,
         component_name_tag:&str,
-        handle_state_change:Arc<dyn Fn(String)->Option<String>>
+        handle_state_change:Arc<dyn Fn(String)->Option<String>+Send+Sync>
     )->HomeAssistantDeviceComponent
     {
         let unique_id=device_id.to_string()+"_"+component_id_tag;
@@ -77,6 +77,7 @@ impl Component for Text
     
     fn connect_handlers(&self)->EventHandlers {
         let mut handlers = EventHandlers::new();
+        
         handlers.insert(
             self.command_topic.clone(),
             self.command_handler.clone()
