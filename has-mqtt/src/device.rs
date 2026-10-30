@@ -1,8 +1,9 @@
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use rumqttc::{AsyncClient, ClientError, QoS};
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 
 use crate::{component::HomeAssistantDeviceComponent, mqtt_client::{EventHandlers, HASMQTTClient}};
 
@@ -71,14 +72,14 @@ impl HomeAssistantDeviceConfiguration
         discovery_topic
     }
 
-    pub async fn publish_discovery(&self, client:&AsyncClient, discovery_prefix:String, object_id:&str)->()
+    pub async fn publish_discovery(&self, client:&Arc<Mutex<AsyncClient>>, discovery_prefix:String, object_id:&str)->()
     {
         let discovery_topic=self.get_discovery_topic(discovery_prefix, object_id);
         
         //DON'T do this asynchronously in a separate process. Instead, await (as below). Need to wait for this to complete to connect components!
         //HASMQTTClient::spawn_publish(client.clone(),discovery_topic, QoS::AtLeastOnce, true, self.to_json());
 
-         match client.publish(discovery_topic,QoS::AtLeastOnce,true,self.to_json()).await
+         match client.lock().await.publish(discovery_topic,QoS::AtLeastOnce,true,self.to_json()).await
         {
             Ok(_)=>(),
             Err(e)=>{

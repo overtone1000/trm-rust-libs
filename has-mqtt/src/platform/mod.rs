@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bytes::Bytes;
-use rumqttc::ClientError;
+use rumqttc::{AsyncClient, ClientError};
 
 use crate::{component::HomeAssistantDeviceComponent, mqtt_client::{EventHandler, EventHandlers, HASMQTTClient}, platform::{configs::availability::Availability, empty::Empty}};
 
@@ -26,9 +26,9 @@ pub trait Component
     fn state_topic(&self)->&str;
     fn connect_handlers(&self)->EventHandlers;
     
-    fn subscribe_future(&self, has_client:&HASMQTTClient)-> impl std::future::Future<Output = Result<(), rumqttc::ClientError>>
+    fn subscribe_future(&self, client:&AsyncClient)-> impl std::future::Future<Output = Result<(), rumqttc::ClientError>>
     {
-        has_client.get_client().subscribe(self.command_topic().clone(), rumqttc::QoS::AtLeastOnce)
+        client.subscribe(self.command_topic().clone(), rumqttc::QoS::AtLeastOnce)
     }
 }
 

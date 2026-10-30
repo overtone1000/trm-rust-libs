@@ -1,6 +1,7 @@
 use bytes::Bytes;
 use rumqttc::tokio_rustls::client;
 use rumqttc::{AsyncClient, ClientError, Event, EventLoop, MqttOptions, QoS};
+use tokio::sync::Mutex;
 use tokio::{task, time};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -23,8 +24,8 @@ pub type EventHandlers = HashMap<String,Arc<dyn EventHandler+Send+Sync>>;
 pub struct HASMQTTClient
 {
     discovery_prefix:String,
-    client:AsyncClient,
-    eventloop:EventLoop,
+    client:Arc<Mutex<AsyncClient>>,
+    eventloop:Arc<Mutex<EventLoop>>,
     object_id:String,
     device_configuration:HomeAssistantDeviceConfiguration
 }
@@ -48,14 +49,14 @@ impl HASMQTTClient
 
         HASMQTTClient {
             discovery_prefix:discovery_prefix.to_string(),
-            client,
-            eventloop,
+            client:Arc::new(Mutex::new(client)),
+            eventloop:Arc::new(Mutex::new(eventloop)),
             object_id:object_id.to_string(),
             device_configuration
         }
     }
 
-    pub fn get_client(&self)->&AsyncClient{&self.client}
+    pub fn get_client(&self)->&Arc<Mutex<AsyncClient>>{&self.client}
 
     pub fn spawn_publish<V,S>(&self, topic:S, qos:QoS, retain:bool, payload:V, delay_before:Option<Duration>)
     where
@@ -72,7 +73,7 @@ impl HASMQTTClient
                 },
                 None=>()                
             }
-            match client.publish(topic,qos,retain,payload).await
+            match client.lock().await.publish(topic,qos,retain,payload).await
             {
                 Ok(_)=>(),
                 Err(e)=>{
@@ -110,11 +111,11 @@ impl HASMQTTClient
         self.device_configuration.connect_components(&self).await
     }
 
-    pub async fn run(mut self)->Result<(),Box<dyn std::error::Error + Send + Sync>>
+    pub async fn run(&self)->Result<(),Box<dyn std::error::Error + Send + Sync>>
     {
         let mut handlers:Option<HashMap<String,Arc<dyn EventHandler+Send+Sync>>>=None;
         loop {
-            match self.eventloop.poll().await
+            match self.eventloop.lock().await.poll().await
             {
                 Ok(notification)=>{
                     match notification

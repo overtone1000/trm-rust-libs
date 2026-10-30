@@ -17,7 +17,11 @@ pub enum HomeAssistantDeviceComponent
 
 async fn configure_component<T:Component>(component:&T, has_client:&HASMQTTClient)->Result<Option<EventHandlers>,ClientError>
 {
-    component.subscribe_future(has_client).await;
+    match component.subscribe_future(&(has_client.get_client().lock().await.clone())).await
+    {
+        Ok(_) => (),
+        Err(e) => return Err(e),
+    };
     component.availability().set_availability(has_client, true);
     Ok(Some(component.connect_handlers()))
 }
