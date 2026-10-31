@@ -90,7 +90,7 @@ impl HASMQTTClient
     )->(AsyncClient,EventLoop)
     {
         let mut mqttoptions = MqttOptions::new(client_id, server_url,server_port);
-        mqttoptions.set_keep_alive(Duration::from_secs(5));
+        mqttoptions.set_keep_alive(Duration::from_secs(60*5));
 
         let (client, eventloop) = AsyncClient::new(mqttoptions, 10);
 
@@ -116,6 +116,7 @@ impl HASMQTTClient
         let mut handlers:Option<HashMap<String,Arc<dyn EventHandler+Send+Sync>>>=None;
         println!("has-mqtt: event loop starting");
         loop {
+            println!("has-mqtt: polling event loop");
             match self.eventloop.lock().await.poll().await
             {
                 Ok(notification)=>{
