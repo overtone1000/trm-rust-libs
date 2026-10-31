@@ -114,6 +114,7 @@ impl HASMQTTClient
     pub async fn run(&self)->Result<(),Box<dyn std::error::Error + Send + Sync>>
     {
         let mut handlers:Option<HashMap<String,Arc<dyn EventHandler+Send+Sync>>>=None;
+        println!("has-mqtt: event loop starting");
         loop {
             match self.eventloop.lock().await.poll().await
             {
@@ -164,12 +165,20 @@ impl HASMQTTClient
                                         }
                                     }
                                 },
-                                rumqttc::Packet::SubAck(_)=>(),   
+                                rumqttc::Packet::SubAck(_)=>(),
                                 rumqttc::Packet::PingReq=>(),
                                 rumqttc::Packet::PingResp=>(),
                                 unhandled=>{
                                     println!("Unhandled packet: {:?}",unhandled)
                                 }
+                                //rumqttc::Packet::Connect(connect) => todo!(),   
+                                //rumqttc::Packet::PubRec(pub_rec) => todo!(),
+                                //rumqttc::Packet::PubRel(pub_rel) => todo!(),
+                                //rumqttc::Packet::PubComp(pub_comp) => todo!(),
+                                //rumqttc::Packet::Subscribe(subscribe) => todo!(),
+                                //rumqttc::Packet::Unsubscribe(unsubscribe) => todo!(),
+                                //rumqttc::Packet::UnsubAck(unsub_ack) => todo!(),
+                                //rumqttc::Packet::Disconnect => todo!(),
                             }
                         },
                         Event::Outgoing(_outgoing) => (),

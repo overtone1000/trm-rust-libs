@@ -79,7 +79,7 @@ impl HomeAssistantDeviceConfiguration
         //DON'T do this asynchronously in a separate process. Instead, await (as below). Need to wait for this to complete to connect components!
         //HASMQTTClient::spawn_publish(client.clone(),discovery_topic, QoS::AtLeastOnce, true, self.to_json());
 
-         match client.lock().await.publish(discovery_topic,QoS::AtLeastOnce,true,self.to_json()).await
+        match client.lock().await.publish(discovery_topic,QoS::AtLeastOnce,true,self.to_json()).await
         {
             Ok(_)=>(),
             Err(e)=>{

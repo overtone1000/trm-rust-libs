@@ -28,7 +28,7 @@ pub trait Component
     
     fn subscribe_future(&self, client:&AsyncClient)-> impl std::future::Future<Output = Result<(), rumqttc::ClientError>>
     {
-        client.subscribe(self.command_topic().clone(), rumqttc::QoS::AtLeastOnce)
+        client.subscribe(self.command_topic(), rumqttc::QoS::AtLeastOnce)
     }
 }
 
@@ -51,7 +51,7 @@ impl <T:HASMQTTState+Send+Sync> CommandHandler<T>
         has_client.spawn_publish(
             self.state_topic.clone(),
             rumqttc::QoS::AtLeastOnce,
-            false,
+            true,
             state.to_payload().to_string(),
             None
         );
