@@ -169,6 +169,25 @@ fn handle_result<T:std::error::Error>(result:Result<(),T>)->()
     match result
     {
         Ok(_)=>(),
-        Err(e)=>eprintln!("Listener error {:?}. Could this be a misconfiguration of the service spawner in trm-rust-libs?",e)
+        Err(e)=>{
+            eprintln!("hyper-services::service::spawn Listener error: {:?}", e);
+            let mut cont=true;
+
+            let mut nexte:&dyn std::error::Error=&e;
+            while cont
+            {
+                match nexte.source()
+                {
+                    Some(source)=>{
+                        eprintln!("hyper-services::service::spawn   - Source: {:?}",source);
+                        nexte=source;
+                    },
+                    None=>{
+                        eprintln!("hyper-services::service::spawn   - End of error chain.");
+                        cont=false
+                    }
+                }
+            }
+        }
     }
 }
